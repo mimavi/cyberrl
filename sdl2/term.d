@@ -164,14 +164,14 @@ static this()
 		SDLK_x: Key.X,
 		SDLK_y: Key.Y,
 		SDLK_z: Key.Z,
-		SLDK_LEFTBRACKET: Key.lbrace,
+		SDLK_LEFTBRACKET: Key.lbrace,
 		SDLK_RIGHTBRACKET: Key.rbrace,
 		SDLK_BACKSLASH: Key.vbar,
 		SDLK_SEMICOLON: Key.colon,
 		SDLK_QUOTE: Key.quote,
 		SDLK_COMMA: Key.less,
-		SDLK_PERIOD: Key.greater
-		SDLK_SLASH: Key.question
+		SDLK_PERIOD: Key.greater,
+		SDLK_SLASH: Key.question,
 		SDLK_BACKQUOTE: Key.tilde
 	];
 	DerelictSDL2.load();
@@ -249,7 +249,7 @@ Key readKey()
 		&& event.key.keysym.sym <= SDLK_z)
 	|| (event.key.keysym.sym >= SDLK_0
 		&& event.key.keysym.sym <= SDLK_9))
-	|| event.key.keysym.sym == SLDK_LEFTBRACKET
+	|| event.key.keysym.sym == SDLK_LEFTBRACKET
 	|| event.key.keysym.sym == SDLK_RIGHTBRACKET
 	|| event.key.keysym.sym == SDLK_BACKSLASH
 	|| event.key.keysym.sym == SDLK_SEMICOLON
