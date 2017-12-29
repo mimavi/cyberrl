@@ -1,0 +1,23 @@
+{
+	"name": "cyberrl",
+	"targetType": "executable",
+	"sourcePaths": ["src"],
+	"importPaths": ["src"],
+	"subPackages": [
+	{
+		"name": "ncurses-unix",
+		"targetName": "cyberrl-ncurses",
+		"sourcePaths": ["src", "ncurses"],
+		"dependencies": {
+			"ncurses": "*"
+		}
+	},
+	{
+		"name": "sdl2-windows",
+		"targetName": "cyberrl-sdl2",
+		"sourcePaths": ["src", "sdl2"],
+		"dependencies": {
+			"derelict-sdl2": "*"
+		}
+	}]
+}
