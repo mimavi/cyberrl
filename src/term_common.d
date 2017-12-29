@@ -18,6 +18,7 @@ enum Key
 	backslash, vbar, semicolon, colon, apostrophe, quote,
 	comma, period, slash, question, underscore, tilde,
 	backtick, // '`'.
+	equals, // '='
 	less, // '<'.
 	greater, // '>'.
 	plus, minus,
