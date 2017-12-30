@@ -2,8 +2,8 @@ module term;
 static import ncurses = deimos.ncurses;
 public import term_common;
 
-private immutable uint term_width = 80;
-private immutable uint term_height = 24;
+private immutable size_t term_width = 80;
+private immutable size_t term_height = 24;
 
 private Symbol[term_width*term_height] array;
 
@@ -82,27 +82,27 @@ Key readKey()
 
 void refresh()
 {
-	for (int y = 0; y < term_height; y++) {
-		for (int x = 0; x < term_width; x++) {
+	for (size_t y = 0; y < term_height; y++) {
+		for (size_t x = 0; x < term_width; x++) {
 			Symbol symbol = array[x+y*term_width];
 			ulong color_pair = ncurses.COLOR_PAIR(
 				cast(short)(symbol.color+symbol.bg_color*(Color.max+1)));
 			ncurses.attron(symbol.is_bright ?
 			               color_pair | ncurses.A_BOLD :
 			               color_pair);
-			ncurses.mvaddch(y, x, symbol.chr);
+			ncurses.mvaddch(cast(int)y, cast(int)x, symbol.chr);
 		}
 	}
 
 	ncurses.refresh();
 }
 
-void setSymbol(int x, int y, Symbol symbol)
+void setSymbol(size_t x, size_t y, Symbol symbol)
 {
 	array[x+y*term_width] = symbol;
 }
 
-Symbol getSymbol(int x, int y)
+Symbol getSymbol(size_t x, size_t y)
 {
 	return array[x+y*term_width];
 }
