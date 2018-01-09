@@ -1,4 +1,3 @@
-module term_common;
 import term;
 
 enum Key
@@ -36,6 +35,13 @@ struct Symbol {
 	Color color = Color.white;
 	Color bg_color = Color.black;
 	bool is_bright = false;
+
+	this(char chr, Color color, Color bg_color, bool is_bright) {
+		this.chr = chr;
+		this.color = color;
+		this.bg_color = bg_color;
+		this.is_bright = is_bright;
+	}
 }
 
 class TermException : Exception

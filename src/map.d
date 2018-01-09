@@ -1,43 +1,89 @@
-enum Tile
+import util;
+import term;
+import actor;
+import std.container;
+
+class Tile
 {
-	floor,
-	wall
+	Actor actor;
+	abstract @property Symbol symbol();
+	abstract @property bool is_blocking();
+
+	void draw(int x, int y) {
+		if(actor is null) {
+			term.setSymbol(x, y, symbol);
+		}
+		else {
+			actor.draw(x, y);
+		}
+	}
 }
 
-class Cell
+class FloorTile : Tile
 {
-	Tile tile_type;
+	override @property Symbol symbol()
+	{
+		return Symbol('.', Color.white, Color.black, false);
+	}
+	override @property bool is_blocking() { return false; }
+}
+
+class WallTile : Tile
+{
+	override @property Symbol symbol()
+	{
+		return Symbol('#', Color.white, Color.black, false);
+	}
+	override @property bool is_blocking() { return true; }
 }
 
 class Map
 {
-	@property size_t width() { return _width; }
-	@property size_t height() { return _height; }
+	SList!Actor actors;
+	private int _width, _height;
+	private Tile[] _tiles;
+	private Tile tmp;
 
-	ref Cell cell(size_t x, size_t y) { return _array[x+y*_width]; }
-
-	this(size_t width, size_t height) {
+	this(size_t width, size_t height)
+	{
 		_width = width;
 		_height = height;
-		_array.length = width*height;
+		_tiles.length = width*height;
 		foreach (y; 0..height) {
 			foreach (x; 0..width) {
-				cell(x, y) = new Cell;
+				get_tile(x, y) = new FloorTile;
+			}
+		}
+		actors = make!(SList!Actor)();
+	}
+
+	@property int width() { return _width; }
+	@property int height() { return _height; }
+	ref Tile get_tile(int x, int y)
+	{
+		if(x < 0 || y < 0 || x >= _width || y >= _width) {
+			tmp = new WallTile;
+			return tmp;
+		}
+		return _tiles[x+y*_width];
+	}
+
+	void update()
+	{
+		foreach (actor; actors[]) {
+			actor.update();
+		}
+	}
+
+	void draw(int src_x, int src_y, int dest_x, int dest_y,
+		int width, int height)
+	{
+		foreach (y; 0..height) {
+			foreach (x; 0..width) {
+				get_tile(src_x+x, src_y+y).draw(dest_x+x, dest_y+y);
+				//term.setSymbol(dest_x+x, dest_y+y,
+					//get_tile(src_x+x, src_y+y).symbol);
 			}
 		}
 	}
-
-	void dummyGen() {
-		foreach (x; 0..width) {
-			cell(x, 0).tile_type = Tile.wall;
-			cell(x, height-1).tile_type = Tile.wall;
-		}
-		foreach (y; 0..height) {
-			cell(0, y).tile_type = Tile.wall;
-			cell(width-1, y).tile_type = Tile.wall;
-		}
-	}
-
-	private size_t _width, _height;
-	private Cell[] _array;
 }

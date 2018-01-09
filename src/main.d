@@ -1,24 +1,36 @@
-static import term;
-static import map;
+import term;
+import game;
+import actor;
 import std.stdio;
+import std.format;
+
+Game main_game;
+PlayerActor main_player;
 
 void main()
 {
 	try {
-		map.Map _map = new map.Map(23, 23);
-		_map.dummyGen();
-		foreach (y; 0.._map.height) {
-			foreach (x; 0.._map.width) {
-				term.setSymbol(x, y, term.Symbol(_map.cell(x, y).tile_type == map.Tile.floor ? '.' : '#',
-					term.Color.white, term.Color.black, false));
-			}
-		}
+		import map;
+		main_game = new Game;
+		main_player = new PlayerActor(main_game.map, 10, 10);
+		main_game.map.get_tile(9, 9) = new WallTile;
+		main_game.map.get_tile(9, 11) = new WallTile;
+		main_game.map.get_tile(11, 9) = new WallTile;
+		main_game.map.get_tile(11, 11) = new WallTile;
+		main_game.centerizeCamera(main_player.x, main_player.y);
+		main_game.run();
 	}
+	// TODO: Better error and exception handling.
 	catch (Error e) {
-		term.print(0, 0, e.msg, term.Color.white, term.Color.black, false, 30);
+		writefln("%s %d %s: %s",
+			e.file, e.line, e.info, e.msg);
 		term.readKey();
 		return;
 	}
-	term.print(10, 10, "Hello World!", term.Color.yellow, term.Color.black, true, 30);
-	term.readKey();
+	catch (Exception e) {
+		writefln("%s %d %s: %s",
+			e.file, e.line, e.info, e.msg);
+		term.readKey();
+		return;
+	}
 }
