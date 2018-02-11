@@ -1,5 +1,20 @@
 import term;
 
+immutable int term_width = 80;
+immutable int term_height = 24;
+
+Symbol[term_width*term_height] symbol_array;
+
+void setSymbol(int x, int y, Symbol symbol)
+{
+	symbol_array[x+y*term_width] = symbol;
+}
+
+Symbol getSymbol(int x, int y)
+{
+	return symbol_array[x+y*term_width];
+}
+
 enum Key
 {
 	// We do not separate keypad keys.

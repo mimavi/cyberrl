@@ -2,11 +2,6 @@ module term;
 static import ncurses = deimos.ncurses;
 public import term_common;
 
-private immutable size_t term_width = 80;
-private immutable size_t term_height = 24;
-
-private Symbol[term_width*term_height] array;
-
 private Key[16] code_conv_32 = [
 	Key.space, Key.exclam, Key.quote, Key.hash,
 	Key.dollar, Key.percent, Key.ampersand, Key.apostrophe,
@@ -84,7 +79,7 @@ void refresh()
 {
 	for (size_t y = 0; y < term_height; y++) {
 		for (size_t x = 0; x < term_width; x++) {
-			Symbol symbol = array[x+y*term_width];
+			Symbol symbol = symbol_array[x+y*term_width];
 			ulong color_pair = ncurses.COLOR_PAIR(
 				cast(short)(symbol.color+symbol.bg_color*(Color.max+1)));
 			ncurses.attron(symbol.is_bright ?
@@ -95,14 +90,4 @@ void refresh()
 	}
 
 	ncurses.refresh();
-}
-
-void setSymbol(size_t x, size_t y, Symbol symbol)
-{
-	array[x+y*term_width] = symbol;
-}
-
-Symbol getSymbol(size_t x, size_t y)
-{
-	return array[x+y*term_width];
 }

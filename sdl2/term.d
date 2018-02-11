@@ -7,8 +7,6 @@ public import term_common;
 
 private immutable int symbol_width = 9;
 private immutable int symbol_height = 16;
-private immutable int symbol_map_width = 80;
-private immutable int symbol_map_height = 24;
 private immutable int codepage_width = 16;
 private immutable int codepage_height = 16;
 private immutable ubyte[Color.max+1] color_to_r = [
@@ -46,14 +44,11 @@ private SDL_Window* window;
 private SDL_Renderer* renderer;
 private SDL_Texture* codepage;
 
-private Symbol[] symbol_map;
-
 private Key[SDL_Keycode] keycode_to_key;
 private Key[SDL_Keycode] alnum_keycode_to_shifted_key;
 
 static this()
 {
-	symbol_map.length = symbol_map_width*symbol_map_height;
 	keycode_to_key = [
 		SDLK_LEFT: Key.digit_4,
 		SDLK_RIGHT: Key.digit_6,
@@ -181,8 +176,8 @@ static this()
 		"CyberRL",
 		SDL_WINDOWPOS_CENTERED,
 		SDL_WINDOWPOS_CENTERED,
-		symbol_width*symbol_map_width,
-		symbol_height*symbol_map_height,
+		symbol_width*term_width,
+		symbol_height*term_height,
 		0);
 	if(window is null){
 		throw new TermException(
@@ -267,12 +262,12 @@ Key readKey()
 void refresh()
 {
 	SDL_RenderClear(renderer);
-	for(int i = 0; i < symbol_map_width; ++i){
-		for(int j = 0; j < symbol_map_height; ++j){
-			int index = i+j*symbol_map_width;
+	for(int i = 0; i < term_width; ++i){
+		for(int j = 0; j < term_height; ++j){
+			int index = i+j*term_width;
 			SDL_Rect srcrect = {
-				x: (symbol_map[index].chr%codepage_width)*symbol_width,
-				y: (symbol_map[index].chr/codepage_width)*symbol_height,
+				x: (symbol_array[index].chr%codepage_width)*symbol_width,
+				y: (symbol_array[index].chr/codepage_width)*symbol_height,
 				w: symbol_width,
 				h: symbol_height,
 			};
@@ -283,9 +278,9 @@ void refresh()
 				h: symbol_height,
 			};
 			SDL_SetTextureColorMod(codepage,
-				color_to_r[symbol_map[index].color],
-				color_to_g[symbol_map[index].color],
-				color_to_b[symbol_map[index].color]);
+				color_to_r[symbol_array[index].color],
+				color_to_g[symbol_array[index].color],
+				color_to_b[symbol_array[index].color]);
 			SDL_RenderCopy(renderer, codepage, &srcrect, &destrect);
 		}
 	}
@@ -294,10 +289,10 @@ void refresh()
 
 void setSymbol(int x, int y, Symbol symbol)
 {
-	symbol_map[x+y*symbol_map_width] = symbol;
+	symbol_array[x+y*term_width] = symbol;
 }
 
 Symbol getSymbol(int x, int y)
 {
-	return symbol_map[x+y*symbol_map_width];
+	return symbol_array[x+y*term_width];
 }
