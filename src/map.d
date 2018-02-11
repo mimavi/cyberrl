@@ -44,7 +44,7 @@ class Map
 	private Tile[] _tiles;
 	private Tile tmp;
 
-	this(size_t width, size_t height)
+	this(int width, int height)
 	{
 		_width = width;
 		_height = height;
