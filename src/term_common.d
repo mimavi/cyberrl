@@ -1,4 +1,5 @@
 import term;
+import std.format;
 
 immutable int term_width = 80;
 immutable int term_height = 24;
@@ -7,11 +8,15 @@ Symbol[term_width*term_height] symbol_array;
 
 void setSymbol(int x, int y, Symbol symbol)
 {
+	if (x >= term_width || y >= term_height || x < 0 || y < 0)
+		throw new TermException(format!"attempt to write out of terminal bounds: %d %d"(x, y));
 	symbol_array[x+y*term_width] = symbol;
 }
 
 Symbol getSymbol(int x, int y)
 {
+	if (x >= term_width || y >= term_height || x < 0 || y < 0)
+		throw new TermException(format!"attempt to read out of terminal bounds: %d %d"(x, y));
 	return symbol_array[x+y*term_width];
 }
 
@@ -73,5 +78,14 @@ void print(int x, int y,
 	// `width` is useless a.t.m..
 	foreach(int i, char c; str){
 		setSymbol(x+i, y, Symbol(c, color, bg_color, is_bright));
+	}
+}
+
+void clear()
+{
+	foreach (y; 0..term_height) {
+		foreach (x; 0..term_width) {
+			setSymbol(x, y, Symbol());
+		}
 	}
 }
