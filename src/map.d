@@ -92,7 +92,7 @@ class Map
 		//*
 		void draw_callback(int tile_x, int tile_y, Tile tile)
 		{
-			tile.draw(tile_x-src_x+dest_x, tile_y-src_y+dest_x);
+			tile.draw(tile_x-src_x+dest_x, tile_y-src_y+dest_y);
 		}
 
 		fov(src_x+width/2, src_y+height/2, 11, &draw_callback);
@@ -126,7 +126,7 @@ class Map
 			cell > ((row-0.5)*end_slope-0.5); cell--)
 		{
 			int tile_x = vert ? center_x+cell*dir_c : center_x+row*dir_r;
-			int tile_y = vert ? center_y+cell*dir_r : center_y+row*dir_c;
+			int tile_y = vert ? center_y+row*dir_r : center_y+cell*dir_c;
 			Tile tile = get_tile(tile_x, tile_y);
 
 			callback(tile_x, tile_y, tile);
