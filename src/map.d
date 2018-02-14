@@ -88,22 +88,34 @@ class Map
 					//get_tile(src_x+x, src_y+y).symbol);
 			}
 		}
-		//*/
+		/*/
 		//*
-		fov_scan(src_x+11, src_y+11, 1, 1, 1, 11, true);
-		fov_scan(src_x+11, src_y+11, 1, -1, 1, 11, true);
-		fov_scan(src_x+11, src_y+11, -1, 1, 1, 11, true);
-		fov_scan(src_x+11, src_y+11, -1, -1, 1, 11, true);
-		fov_scan(src_x+11, src_y+11, 1, 1, 1, 11, false);
-		fov_scan(src_x+11, src_y+11, 1, -1, 1, 11, false);
-		fov_scan(src_x+11, src_y+11, -1, 1, 1, 11, false);
-		fov_scan(src_x+11, src_y+11, -1, -1, 1, 11, false);
-		get_tile(src_x+11, src_y+11).draw(dest_x+11, dest_y+11);
+		void draw_callback(int tile_x, int tile_y, Tile tile)
+		{
+			tile.draw(tile_x-src_x+dest_x, tile_y-src_y+dest_x);
+		}
+
+		fov(src_x+width/2, src_y+height/2, 11, &draw_callback);
 		//*/
 	}
 
+	void fov(int center_x, int center_y, int range,
+		void delegate(int, int, Tile) callback)
+	{
+		fov_scan(center_x, center_y, 1, 1, 1, range, true, callback);
+		fov_scan(center_x, center_y, 1, -1, 1, range, true, callback);
+		fov_scan(center_x, center_y, -1, 1, 1, range, true, callback);
+		fov_scan(center_x, center_y, -1, -1, 1, range, true, callback);
+		fov_scan(center_x, center_y, 1, 1, 1, range, false, callback);
+		fov_scan(center_x, center_y, 1, -1, 1, range, false, callback);
+		fov_scan(center_x, center_y, -1, 1, 1, range, false, callback);
+		fov_scan(center_x, center_y, -1, -1, 1, range, false, callback);
+
+		callback(center_x, center_y, get_tile(center_x, center_y));
+	}
+
 	void fov_scan(int center_x, int center_y, int dir_c, int dir_r,
-		int row, int range, bool vert,
+		int row, int range, bool vert, void delegate(int, int, Tile) callback,
 		float start_slope = 1, float end_slope = 0)
 	{
 		if (row > range) return;
@@ -113,19 +125,16 @@ class Map
 		for (int cell = cast(int)ceil((row+0.5)*start_slope-0.5);
 			cell > ((row-0.5)*end_slope-0.5); cell--)
 		{
-			Tile tile;
-			if (vert) {
-				tile = get_tile(center_x+cell*dir_c, center_y+row*dir_r);
-				tile.draw(11+cell*dir_c, 11+row*dir_r);
-			} else {
-				tile = get_tile(center_x+row*dir_r, center_y+cell*dir_c);
-				tile.draw(11+row*dir_r, 11+cell*dir_c);
-			}
+			int tile_x = vert ? center_x+cell*dir_c : center_x+row*dir_r;
+			int tile_y = vert ? center_y+cell*dir_r : center_y+row*dir_c;
+			Tile tile = get_tile(tile_x, tile_y);
+
+			callback(tile_x, tile_y, tile);
 
 			if (!blocking && tile.is_blocking) {
 				blocking = true;
 				fov_scan(center_x, center_y, dir_c, dir_r, row+1, range, vert,
-					start_slope, (cell+0.5)/(row-0.5));
+					callback, start_slope, (cell+0.5)/(row-0.5));
 			} else if (blocking && !tile.is_blocking) {
 				blocking = false;
 				start_slope = (cell+0.5)/(row+0.5);
@@ -133,7 +142,7 @@ class Map
 		}
 		if (!blocking) {
 			fov_scan(center_x, center_y, dir_c, dir_r, row+1, range, vert,
-				start_slope, end_slope);
+				callback, start_slope, end_slope);
 		}
 	}
 }
