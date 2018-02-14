@@ -92,7 +92,14 @@ class Map
 		//*
 		void draw_callback(int tile_x, int tile_y, Tile tile)
 		{
-			tile.draw(tile_x-src_x+dest_x, tile_y-src_y+dest_y);
+			int x = tile_x-src_x+dest_x;
+			int y = tile_y-src_y+dest_y;
+
+			if (x >= dest_x && y >= dest_y &&
+				x < dest_x+width && y < dest_y+height)
+			{
+				tile.draw(x, y);
+			}
 		}
 
 		fov(src_x+width/2, src_y+height/2, 11, &draw_callback);
@@ -121,7 +128,7 @@ class Map
 		if (row > range) return;
 		if (end_slope > start_slope) return;
 
-		bool blocking = false;
+		bool was_blocking = false;
 		for (int cell = cast(int)ceil((row+0.5)*start_slope-0.5);
 			cell > ((row-0.5)*end_slope-0.5); cell--)
 		{
@@ -131,16 +138,16 @@ class Map
 
 			callback(tile_x, tile_y, tile);
 
-			if (!blocking && tile.is_blocking) {
-				blocking = true;
+			if (!was_blocking && tile.is_blocking) {
 				fov_scan(center_x, center_y, dir_c, dir_r, row+1, range, vert,
 					callback, start_slope, (cell+0.5)/(row-0.5));
-			} else if (blocking && !tile.is_blocking) {
-				blocking = false;
+				was_blocking = true;
+			} else if (was_blocking && !tile.is_blocking) {
 				start_slope = (cell+0.5)/(row+0.5);
+				was_blocking = false;
 			}
 		}
-		if (!blocking) {
+		if (!was_blocking) {
 			fov_scan(center_x, center_y, dir_c, dir_r, row+1, range, vert,
 				callback, start_slope, end_slope);
 		}
