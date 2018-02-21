@@ -1,27 +1,36 @@
-import term;
-import game;
-import actor;
 import std.stdio;
 import std.format;
 import std.random;
 import std.datetime;
+import util;
+import term;
+import game;
 
 Game main_game;
-PlayerActor main_player;
 
 void main()
 {
 	try {
 		import map;
+		import actor;
+		import tile;
+		import item;
 		main_game = new Game;
-		main_player = new PlayerActor(main_game.map, 10, 10);
-		auto rng = Random(cast(uint) Clock.currTime().fracSecs().total!"hnsecs");
+		main_game.player = new PlayerActor;
+		main_game.spawn(main_game.player, 10, 10);
+		auto rng = Random(
+			cast(uint) Clock.currTime().fracSecs().total!"hnsecs");
 		foreach (i; 1..10000) {
 			int x = uniform(0, 300, rng);
 			int y = uniform(0, 300, rng);
 			main_game.map.get_tile(x, y) = new WallTile;
 		}
-		main_game.centerizeCamera(main_player.x, main_player.y);
+		foreach (i; 1..10000) {
+			int x = uniform(0, 300, rng);
+			int y = uniform(0, 300, rng);
+			main_game.map.get_tile(x, y).items.insert(new LightkatanaItem);
+		}
+		main_game.centerizeCamera(main_game.player.x, main_game.player.y);
 		main_game.run();
 	}
 	// TODO: Better error and exception handling.

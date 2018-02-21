@@ -1,78 +1,57 @@
+import std.container;
+import std.range;
+import std.math;
 import util;
 import term;
+import tile;
 import actor;
-import std.container;
-import std.math;
-
-class Tile
-{
-	Actor actor;
-	abstract @property Symbol symbol();
-	abstract @property bool is_blocking();
-
-	void draw(int x, int y) {
-		if(actor is null) {
-			term.setSymbol(x, y, symbol);
-		}
-		else {
-			actor.draw(x, y);
-		}
-	}
-}
-
-class FloorTile : Tile
-{
-	override @property Symbol symbol()
-	{
-		return Symbol('.', Color.white, Color.black, false);
-	}
-	override @property bool is_blocking() { return false; }
-}
-
-class WallTile : Tile
-{
-	override @property Symbol symbol()
-	{
-		return Symbol('#', Color.white, Color.black, false);
-	}
-	override @property bool is_blocking() { return true; }
-}
+import item;
 
 class Map
 {
-	SList!Actor actors;
-	private int _width, _height;
-	private Tile[] _tiles;
+	private Tile[] tiles;
+	private DList!Actor actors;
 	private Tile tmp;
-
-	this(int width, int height)
-	{
-		_width = width;
-		_height = height;
-		_tiles.length = width*height;
-		foreach (y; 0..height) {
-			foreach (x; 0..width) {
-				get_tile(x, y) = new FloorTile;
-			}
-		}
-		actors = make!(SList!Actor)();
-	}
+	private int _width, _height;
 
 	@property int width() { return _width; }
 	@property int height() { return _height; }
 	ref Tile get_tile(int x, int y)
 	{
-		if(x < 0 || y < 0 || x >= _width || y >= _width) {
+		if (x < 0 || y < 0 || x >= _width || y >= _width) {
 			tmp = new WallTile;
 			return tmp;
 		}
-		return _tiles[x+y*_width];
+		return tiles[x+y*_width];
+	}
+
+	this(int width, int height)
+	{
+		_width = width;
+		_height = height;
+		tiles.length = width*height;
+		foreach (y; 0..height) {
+			foreach (x; 0..width) {
+				get_tile(x, y) = new FloorTile;
+			}
+		}
+		actors = make!(DList!Actor)();
+	}
+
+	void add_actor(Actor actor, int x, int y)
+	{
+		actors.insertBack(actor);
+		actor.init_pos(x, y);
 	}
 
 	void update()
 	{
-		foreach (actor; actors[]) {
-			actor.update();
+		for (auto range = actors[]; !range.empty; range.popFront()) {
+			if (range.front.is_despawned) {
+				actors.popFirstOf(range);
+			} else {
+				range.front.update();
+			}
 		}
 	}
 

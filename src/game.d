@@ -1,22 +1,38 @@
 import util;
 import term;
+import actor;
 import map;
 
 class Game
 {
 	immutable int camera_width = 23, camera_height = 23;
 	Map map;
+	PlayerActor player;
 	private int camera_x, camera_y;
 
 	this() {
 		map = new Map(300, 300);
 	}
 
+	void spawn(Actor actor, int x, int y)
+	{
+		actor.game = this;
+		map.add_actor(actor, x, y);
+	}
+
+	void despawn(Actor actor)
+	{
+		actor.is_despawned = true;
+	}
+
 	void run() { 
 		while (true) {
-			map.draw(camera_x, camera_y, 0, 0, 23, 23);
 			map.update();
 		}
+	}
+
+	void draw() {
+		map.draw(camera_x, camera_y, 0, 0, 23, 23);
 	}
 
 	void centerizeCamera(int x, int y)

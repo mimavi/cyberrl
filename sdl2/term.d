@@ -108,6 +108,13 @@ static this()
 		SDLK_PERIOD: Key.period,
 		SDLK_SLASH: Key.slash,
 		SDLK_BACKQUOTE: Key.backtick,
+		SDLK_ESCAPE: Key.escape,
+		SDLK_RETURN: Key.enter,
+		SDLK_RETURN2: Key.enter,
+		SDLK_TAB: Key.tab,
+		SDLK_SPACE: Key.space,
+		SDLK_DELETE: Key.del,
+		SDLK_BACKSPACE: Key.backspace,
 	];
 	alnum_keycode_to_shifted_key = [
 		SDLK_LEFT: Key.dollar,
@@ -167,10 +174,16 @@ static this()
 		SDLK_COMMA: Key.less,
 		SDLK_PERIOD: Key.greater,
 		SDLK_SLASH: Key.question,
-		SDLK_BACKQUOTE: Key.tilde
+		SDLK_BACKQUOTE: Key.tilde,
+		/*SDLK_ESCAPE: Key.escape,
+		SDLK_RETURN: Key.enter,
+		SDLK_RETURN2: Key.enter,
+		SDLK_TAB: Key.tab,
+		SDLK_SPACE: Key.space,
+		SDLK_BACKSPACE: Key.backspace,*/
 	];
 	DerelictSDL2.load();
-	if(SDL_Init(SDL_INIT_VIDEO) != 0)
+	if (SDL_Init(SDL_INIT_VIDEO) != 0)
 		throw new TermException(format("Unable to initialize SDL: %s", SDL_GetError()));
 	window = SDL_CreateWindow(
 		"CyberRL",
@@ -179,21 +192,21 @@ static this()
 		symbol_width*term_width,
 		symbol_height*term_height,
 		0);
-	if(window is null){
+	if (window is null){
 		throw new TermException(
 			format("Unable to create SDL window: %s", SDL_GetError()));
 	}
 	renderer = SDL_CreateRenderer(window, -1, 0);
-	if(renderer is null){
+	if (renderer is null){
 		throw new TermException(
 			format("Unable to create SDL renderer: %s", SDL_GetError()));
 	}
 	SDL_Surface* codepagesur = SDL_LoadBMP("sdl2/cp437.bmp");
-	if(codepagesur is null)
+	if (codepagesur is null)
 		throw new TermException(
 			format("Unable to load 'sdl2/cp437.bmp': %s", SDL_GetError()));
 	codepage = SDL_CreateTextureFromSurface(renderer, codepagesur);
-	if(codepage is null)
+	if (codepage is null)
 		throw new TermException(
 			format("Unable to create SDL texture from SDL surface: %s",
 			SDL_GetError()));
@@ -212,47 +225,24 @@ Key readKey()
 {
 	refresh();
 	SDL_Event event;
-	do{
-		if(SDL_WaitEvent(&event) != 1){
+	do {
+		if (SDL_WaitEvent(&event) != 1) {
 			throw new TermException(
 				format("Waiting for SDL event failed: %s", SDL_GetError()));
 		}
-		if(event.type == SDL_QUIT){
+		if (event.type == SDL_QUIT) {
 			exit(EXIT_SUCCESS);
 		}
 	// Repeat until a valid key is pressed.
 	// Make sure that keycode is a valid key for `keycode_to_key`.
-	}while(event.type != SDL_KEYDOWN
-	// Keypad keys are valid.
-	|| ((event.key.keysym.sym < SDLK_KP_1
-			|| event.key.keysym.sym > SDLK_KP_0)
-	// Alphabetic keys are valid.
-		&& (event.key.keysym.sym < SDLK_a
-			|| event.key.keysym.sym > SDLK_z)
-	// Arrow keys are valid.
-		&& event.key.keysym.sym != SDLK_LEFT
-		&& event.key.keysym.sym != SDLK_RIGHT
-		&& event.key.keysym.sym != SDLK_UP
-		&& event.key.keysym.sym != SDLK_DOWN));
-	
+	} while(event.type != SDL_KEYDOWN
+	|| (event.key.keysym.sym in keycode_to_key) is null);
 	// If shift is held while a key valid for `alnum_keycode_to_shifted_key`
 	// is pressed, then convert it to its shifted analogon.
 	// All alphanumeric keys and
 	// '[', ']', '\', ';', '\'', ',', '.', '/' are valid here.
-	if((event.key.keysym.mod & KMOD_SHIFT)
-	&& ((event.key.keysym.sym >= SDLK_a
-		&& event.key.keysym.sym <= SDLK_z)
-	|| (event.key.keysym.sym >= SDLK_0
-		&& event.key.keysym.sym <= SDLK_9))
-	|| event.key.keysym.sym == SDLK_LEFTBRACKET
-	|| event.key.keysym.sym == SDLK_RIGHTBRACKET
-	|| event.key.keysym.sym == SDLK_BACKSLASH
-	|| event.key.keysym.sym == SDLK_SEMICOLON
-	|| event.key.keysym.sym == SDLK_QUOTE
-	|| event.key.keysym.sym == SDLK_COMMA
-	|| event.key.keysym.sym == SDLK_PERIOD
-	|| event.key.keysym.sym == SDLK_SLASH
-	|| event.key.keysym.sym == SDLK_BACKQUOTE){
+	if ((event.key.keysym.mod & KMOD_SHIFT)
+	&& (event.key.keysym.sym in keycode_to_key) !is null) {
 		return alnum_keycode_to_shifted_key[event.key.keysym.sym];
 	}
 
@@ -262,8 +252,8 @@ Key readKey()
 void refresh()
 {
 	SDL_RenderClear(renderer);
-	for(int i = 0; i < term_width; ++i){
-		for(int j = 0; j < term_height; ++j){
+	for (int i = 0; i < term_width; ++i) {
+		for (int j = 0; j < term_height; ++j) {
 			int index = i+j*term_width;
 			SDL_Rect srcrect = {
 				x: (symbol_array[index].chr%codepage_width)*symbol_width,

@@ -1,24 +1,10 @@
-import term;
 import std.format;
+import term;
 
 immutable int term_width = 80;
 immutable int term_height = 24;
 
 Symbol[term_width*term_height] symbol_array;
-
-void setSymbol(int x, int y, Symbol symbol)
-{
-	if (x >= term_width || y >= term_height || x < 0 || y < 0)
-		throw new TermException(format!"attempt to write out of terminal bounds: %d %d"(x, y));
-	symbol_array[x+y*term_width] = symbol;
-}
-
-Symbol getSymbol(int x, int y)
-{
-	if (x >= term_width || y >= term_height || x < 0 || y < 0)
-		throw new TermException(format!"attempt to read out of terminal bounds: %d %d"(x, y));
-	return symbol_array[x+y*term_width];
-}
 
 enum Key
 {
@@ -50,33 +36,64 @@ enum Color
 	black, red, green, yellow, blue, magenta, cyan, white,
 }
 
-struct Symbol {
+struct Symbol
+{
 	char chr = ' ';
 	Color color = Color.white;
 	Color bg_color = Color.black;
 	bool is_bright = false;
 
-	this(char chr, Color color, Color bg_color, bool is_bright) {
+	this(char chr,
+		Color color = Color.white,
+		Color bg_color = Color.black,
+		bool is_bright = false)
+	{
 		this.chr = chr;
 		this.color = color;
 		this.bg_color = bg_color;
+		this.is_bright = is_bright;
+	}
+
+	this(char chr, Color color, bool is_bright)
+	{
+		this.chr = chr;
+		this.color = color;
+		this.bg_color = Color.black;
 		this.is_bright = is_bright;
 	}
 }
 
 class TermException : Exception
 {
-	this(string msg, string file = __FILE__, size_t line = __LINE__) {
+	this(string msg, string file = __FILE__, size_t line = __LINE__)
+	{
 		super(msg, file, line);
 	}
 }
 
-void print(int x, int y,
-	string str, Color color, Color bg_color, bool is_bright, int width)
+void setSymbol(int x, int y, Symbol symbol)
+{
+	if (x >= term_width || y >= term_height || x < 0 || y < 0)
+		throw new TermException(format!"attempt to write out of terminal bounds: %d %d"(x, y));
+	symbol_array[x+y*term_width] = symbol;
+}
+
+Symbol getSymbol(int x, int y)
+{
+	if (x >= term_width || y >= term_height || x < 0 || y < 0)
+		throw new TermException(format!"attempt to read out of terminal bounds: %d %d"(x, y));
+	return symbol_array[x+y*term_width];
+}
+
+void write(int x, int y, string str,
+	Color color = Color.white,
+	Color bg_color = Color.black,
+	bool is_bright = false,
+	int width = term_width)
 {
 	// TODO: Proper automatic line breaking.
-	// `width` is useless a.t.m..
-	foreach(int i, char c; str){
+	// `term_width` is useless a.t.m..
+	foreach(int i, char c; str) {
 		setSymbol(x+i, y, Symbol(c, color, bg_color, is_bright));
 	}
 }
