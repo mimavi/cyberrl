@@ -18,6 +18,9 @@ void main()
 		main_game = new Game;
 		main_game.player = new PlayerActor;
 		main_game.spawn(main_game.player, 10, 10);
+		//main_game.spawn(new Actor, 12, 12);
+		auto sm = new SaveManager();
+		sm.save(main_game);
 		auto rng = Random(
 			cast(uint) Clock.currTime().fracSecs().total!"hnsecs");
 		foreach (i; 1..10000) {

@@ -1,3 +1,4 @@
+import std.stdio;
 import util;
 import term;
 import actor;
@@ -7,7 +8,7 @@ class Game
 {
 	immutable int camera_width = 23, camera_height = 23;
 	Map map;
-	PlayerActor player;
+	@("NotSaved") PlayerActor player;
 	private int camera_x, camera_y;
 
 	this() {

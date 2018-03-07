@@ -9,7 +9,7 @@ import game;
 
 class Actor
 {
-	Game game;
+	@("NotSaved") Game game;
 	Array!Item items;
 	bool is_despawned = false;
 	private int _x, _y;
@@ -22,7 +22,7 @@ class Actor
 
 	this()
 	{
-		items = make!(Array!Item)();
+		items = Array!Item();
 	}
 
 	void draw(int x, int y)

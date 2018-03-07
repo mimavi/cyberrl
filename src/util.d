@@ -1,3 +1,8 @@
+import std.container;
+import std.traits;
+import std.array;
+import std.stdio;
+import std.json;
 import term;
 
 byte[Key.max+1] key_to_x = [
@@ -57,9 +62,108 @@ char[chr_to_index.length] index_to_chr = [
 	60: '8', 61: '9',
 ];
 
-/*class Vec2
+class SaveManager
 {
-	int x, y;
+	private JSONValue tree;
+	private Array!JSONValue nodes;
 
-	this(int x, int y) { this.x = x; this.y = y; }
-}*/
+	this()
+	{
+		nodes = Array!JSONValue();
+		nodes.insertBack(JSONValue((JSONValue[string]).init));
+	}
+
+	void save(T)(T var/*, File file*/)
+	{
+		/*foreach (k; __traits(allMembers, T)) {
+			writeln(k);
+			static if (k != "Monitor") {
+				alias T2 = typeof(__traits(getMember, var, k));
+				static if (isScalarType!T2) {
+					writeln("scalar");
+					auto v = __traits(getMember, var, k);
+					saveScalar!T2(v);
+				}
+			}
+		}*/
+		insert(var);
+		writeln(nodes.front.toString);
+	}
+
+	T load(T)(File file)
+	{
+	}
+
+	private void insert(T)(T var)
+	{
+		static if (is(T == Array!S, S)
+		|| is(T == SList!S, S)
+		|| is(T == DList!S, S)) {
+			int i = 0;
+			foreach (v; var[]) {
+				writeln("a: ", i, " ", v);
+				++i;
+			}
+		} else static if (isAggregateType!T) {
+			writeln("x");
+			static if (is(T == class)) {
+				if (var is null) {
+					return;
+				}
+			}
+			insertAggregate(var);
+			//auto names2 = FieldNameTuple!(BaseTypeTuple!T);
+			//writeln("yy ", [names2]);
+		}
+	}
+
+	void insertAggregate(T)(T var)
+	{
+		alias names = FieldNameTuple!T;
+		writeln("y: ", [names], " ", T.stringof);
+		foreach (k, v; var.tupleof) {
+			writeln("b: ", k, " ", names[k], " "/*, v*/);
+			/*foreach (k, S; __traits(getAttributes, v)) {
+				writeln("j: ", k, " ", S.stringof);
+			}*/
+			import game;
+			static if (is(T == Game)) {
+				pragma(msg, names[k]);
+				pragma(msg, hasUDA!(v, "NotSaved"));
+			}
+			static if (isScalarType!(typeof(v))) {
+				writeln("c");
+				nodes.back[names[k]] = JSONValue(v);
+			} else { 
+				writeln("d: ", names[k]);
+				nodes.back[names[k]] = JSONValue((JSONValue[string]).init);
+				nodes.insertBack(nodes.back[names[k]]);
+				insert(v);
+				nodes.removeBack();
+			}
+			
+			/*else static if (is(typeof(v) == Array!S, S)
+			|| is(typeof(v) == SList!S, S)
+			|| is(typeof(v) == DList!S, S)) {
+				nodes.back[names[k]] = JSONValue(cast(int[])[]);
+				//for (int i = 0; i < v.length; ++i) {
+					//nodes.back[names[k]][i] = v[i];
+				//}
+				int i = 0;
+				foreach (u; v[]) {
+					//nodes.back[names[k]][i] = u;
+					//++i;
+				}
+			} else static if (isAggregateType!(typeof(v))) {
+				writeln("is aggregate");
+				nodes.insertBack(JSONValue(names[k]));
+				insert(v);
+				nodes.removeBack();
+			}*/
+		}
+		foreach (k, S; BaseTypeTuple!T) {
+			writeln("q: ", S.stringof);
+			//insertAggregate(cast(S)var);
+		}
+	}
+}

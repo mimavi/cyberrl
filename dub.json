@@ -3,6 +3,9 @@
 	"targetType": "executable",
 	"sourcePaths": ["src"],
 	"importPaths": ["src"],
+	"dependencies": {
+		"orange": "*"
+	},
 	"subPackages": [
 	{
 		"name": "ncurses-unix",

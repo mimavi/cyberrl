@@ -13,7 +13,6 @@ class Map
 	private DList!Actor actors;
 	private Tile tmp;
 	private int _width, _height;
-
 	@property int width() { return _width; }
 	@property int height() { return _height; }
 	ref Tile get_tile(int x, int y)
@@ -35,7 +34,7 @@ class Map
 				get_tile(x, y) = new FloorTile;
 			}
 		}
-		actors = make!(DList!Actor)();
+		actors = DList!Actor();
 	}
 
 	void add_actor(Actor actor, int x, int y)
