@@ -26,12 +26,12 @@ void main()
 		foreach (i; 1..10000) {
 			int x = uniform(0, 300, rng);
 			int y = uniform(0, 300, rng);
-			main_game.map.get_tile(x, y) = new WallTile;
+			main_game.map.getTile(x, y) = new WallTile;
 		}
 		foreach (i; 1..10000) {
 			int x = uniform(0, 300, rng);
 			int y = uniform(0, 300, rng);
-			main_game.map.get_tile(x, y).items.insert(new LightkatanaItem);
+			main_game.map.getTile(x, y).items.insert(new LightkatanaItem);
 		}
 		main_game.centerizeCamera(main_game.player.x, main_game.player.y);
 		main_game.run();

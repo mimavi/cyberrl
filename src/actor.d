@@ -9,8 +9,8 @@ import game;
 
 class Actor
 {
-	@("NotSaved") Game game;
-	Array!Item items;
+	Game game;
+	@("Saved") Array!Item items;
 	bool is_despawned = false;
 	private int _x, _y;
 
@@ -30,17 +30,17 @@ class Actor
 		term.setSymbol(x, y, symbol);
 	}
 
-	void init_pos(int x, int y)
+	void initPos(int x, int y)
 	{
-		game.map.get_tile(x, y).actor = this;
+		game.map.getTile(x, y).actor = this;
 		_x = x;
 		_y = y;
 	}
 
-	void set_pos(int x, int y)
+	void setPos(int x, int y)
 	{
-		game.map.get_tile(_x, _y).actor = null;
-		init_pos(x, y);
+		game.map.getTile(_x, _y).actor = null;
+		initPos(x, y);
 	}
 
 	// NOTE:
@@ -55,22 +55,22 @@ class Actor
 			return false;
 		}
 
-		if (game.map.get_tile(x, y).is_blocking
-		|| game.map.get_tile(x, y).actor !is null) {
+		if (game.map.getTile(x, y).is_blocking
+		|| game.map.getTile(x, y).actor !is null) {
 			return false;
 		}
-		set_pos(x, y);
+		setPos(x, y);
 		return true;
 	}
 
 	bool act_pick_up(int index)
 	{
-		if (index < 0 || index >= game.map.get_tile(x, y).items.length) {
+		if (index < 0 || index >= game.map.getTile(x, y).items.length) {
 			return false;
 		}
-		auto item = game.map.get_tile(x, y).items[index];
-		auto range = game.map.get_tile(x, y).items[index..index+1];
-		game.map.get_tile(x, y).items.linearRemove(range);
+		auto item = game.map.getTile(x, y).items[index];
+		auto range = game.map.getTile(x, y).items[index..index+1];
+		game.map.getTile(x, y).items.linearRemove(range);
 		items.insertBack(item);
 		return true;
 	}
@@ -83,7 +83,7 @@ class Actor
 		auto item = items[index];
 		auto range = items[index..index+1];
 		items.linearRemove(range);
-		game.map.get_tile(x, y).items.insertBack(item);
+		game.map.getTile(x, y).items.insertBack(item);
 		return true;
 	}
 }
@@ -91,9 +91,9 @@ class Actor
 class PlayerActor : Actor
 {
 	override @property Symbol symbol() { return Symbol('@'); }
-	override void init_pos(int x, int y)
+	override void initPos(int x, int y)
 	{
-		super.init_pos(x, y);
+		super.initPos(x, y);
 		main_game.centerizeCamera(x, y);
 	}
 
@@ -108,7 +108,7 @@ class PlayerActor : Actor
 					act_move_to(x+util.key_to_x[key], y+util.key_to_y[key]);
 			} else if (key == Key.g) {
 				int index;
-				if (menu.select_item(game.map.get_tile(x, y).items,
+				if (menu.select_item(game.map.getTile(x, y).items,
 					"Select item to pick up:", index))
 				{
 					has_acted = act_pick_up(index);

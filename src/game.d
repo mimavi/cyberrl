@@ -18,7 +18,7 @@ class Game
 	void spawn(Actor actor, int x, int y)
 	{
 		actor.game = this;
-		map.add_actor(actor, x, y);
+		map.addActor(actor, x, y);
 	}
 
 	void despawn(Actor actor)
