@@ -1,8 +1,10 @@
 module term;
+
 import std.format;
 import core.stdc.stdlib;
 import core.stdc.ctype;
 import derelict.sdl2.sdl;
+
 public import term_common;
 
 private immutable int symbol_width = 9;
