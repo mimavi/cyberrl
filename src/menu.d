@@ -5,11 +5,11 @@ import util;
 import term;
 import item;
 
-bool select_item(Array!Item items, string header, ref int index)
+bool selectItem(Array!Item items, string header, ref int index)
 {
 	int pos = 0;
 	Key key;
-	draw_select_item(items, header, pos);
+	drawSelectItem(items, header, pos);
 	do {
 		key = term.readKey();
 		if (key == Key.escape) {
@@ -21,7 +21,7 @@ bool select_item(Array!Item items, string header, ref int index)
 	return true;
 }
 
-void draw_select_item(Array!Item items, string header, int pos)
+void drawSelectItem(Array!Item items, string header, int pos)
 {
 	term.clear(); // TODO: Optimize. Can be done without clearing.
 	term.write(0, 0, header);
