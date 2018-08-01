@@ -17,12 +17,8 @@ class Map
 	private int _width, _height;
 	@property int width() { return _width; }
 	@property int height() { return _height; }
-<<<<<<< HEAD
 
 	this(Serializer serializer)
-=======
-	ref Tile getTile(int x, int y)
->>>>>>> 55d683408f80c0dea85f81bd08b761d32d40066e
 	{
 		this(serializer.load!(int)("_width"),
 			serializer.load!(int)("_height"));
@@ -41,7 +37,6 @@ class Map
 		actors = DList!Actor();
 	}
 
-<<<<<<< HEAD
 	ref Tile getTile(int x, int y)
 	{
 		if (x < 0 || y < 0 || x >= _width || y >= _width) {
@@ -51,8 +46,6 @@ class Map
 		return tiles[x+y*_width];
 	}
 
-=======
->>>>>>> 55d683408f80c0dea85f81bd08b761d32d40066e
 	void addActor(Actor actor, int x, int y)
 	{
 		actors.insertBack(actor);
