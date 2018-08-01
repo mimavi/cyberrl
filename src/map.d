@@ -17,8 +17,12 @@ class Map
 	private int _width, _height;
 	@property int width() { return _width; }
 	@property int height() { return _height; }
+<<<<<<< HEAD
 
 	this(Serializer serializer)
+=======
+	ref Tile getTile(int x, int y)
+>>>>>>> 55d683408f80c0dea85f81bd08b761d32d40066e
 	{
 		this(serializer.load!(int)("_width"),
 			serializer.load!(int)("_height"));
@@ -37,6 +41,7 @@ class Map
 		actors = DList!Actor();
 	}
 
+<<<<<<< HEAD
 	ref Tile getTile(int x, int y)
 	{
 		if (x < 0 || y < 0 || x >= _width || y >= _width) {
@@ -46,6 +51,8 @@ class Map
 		return tiles[x+y*_width];
 	}
 
+=======
+>>>>>>> 55d683408f80c0dea85f81bd08b761d32d40066e
 	void addActor(Actor actor, int x, int y)
 	{
 		actors.insertBack(actor);
@@ -96,19 +103,19 @@ class Map
 	void fov(int center_x, int center_y, int range,
 		void delegate(int, int, Tile) callback)
 	{
-		fov_scan(center_x, center_y, 1, 1, 1, range, true, callback);
-		fov_scan(center_x, center_y, 1, -1, 1, range, true, callback);
-		fov_scan(center_x, center_y, -1, 1, 1, range, true, callback);
-		fov_scan(center_x, center_y, -1, -1, 1, range, true, callback);
-		fov_scan(center_x, center_y, 1, 1, 1, range, false, callback);
-		fov_scan(center_x, center_y, 1, -1, 1, range, false, callback);
-		fov_scan(center_x, center_y, -1, 1, 1, range, false, callback);
-		fov_scan(center_x, center_y, -1, -1, 1, range, false, callback);
+		fovScan(center_x, center_y, 1, 1, 1, range, true, callback);
+		fovScan(center_x, center_y, 1, -1, 1, range, true, callback);
+		fovScan(center_x, center_y, -1, 1, 1, range, true, callback);
+		fovScan(center_x, center_y, -1, -1, 1, range, true, callback);
+		fovScan(center_x, center_y, 1, 1, 1, range, false, callback);
+		fovScan(center_x, center_y, 1, -1, 1, range, false, callback);
+		fovScan(center_x, center_y, -1, 1, 1, range, false, callback);
+		fovScan(center_x, center_y, -1, -1, 1, range, false, callback);
 
 		callback(center_x, center_y, getTile(center_x, center_y));
 	}
 
-	void fov_scan(int center_x, int center_y, int dir_c, int dir_r,
+	void fovScan(int center_x, int center_y, int dir_c, int dir_r,
 		int row, int range, bool vert, void delegate(int, int, Tile) callback,
 		float start_slope = 1, float end_slope = 0)
 	{
@@ -126,7 +133,7 @@ class Map
 			callback(tile_x, tile_y, tile);
 
 			if (!was_blocking && tile.is_blocking) {
-				fov_scan(center_x, center_y, dir_c, dir_r, row+1, range, vert,
+				fovScan(center_x, center_y, dir_c, dir_r, row+1, range, vert,
 					callback, start_slope, (cell+0.5)/(row-0.5));
 				was_blocking = true;
 			} else if (was_blocking && !tile.is_blocking) {
@@ -135,7 +142,7 @@ class Map
 			}
 		}
 		if (!was_blocking) {
-			fov_scan(center_x, center_y, dir_c, dir_r, row+1, range, vert,
+			fovScan(center_x, center_y, dir_c, dir_r, row+1, range, vert,
 				callback, start_slope, end_slope);
 		}
 	}
