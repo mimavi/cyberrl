@@ -39,6 +39,36 @@ private immutable ubyte[Color.max+1] color_to_b = [
 	Color.cyan:    128,
 	Color.white:   128,
 ];
+private immutable ubyte[Color.max+1] bright_color_to_r = [
+	Color.black:   0,
+	Color.red:     255,
+	Color.green:   0,
+	Color.yellow:  255,
+	Color.blue:    0,
+	Color.magenta: 255,
+	Color.cyan:    0,
+	Color.white:   255,
+];
+private immutable ubyte[Color.max+1] bright_color_to_g = [
+	Color.black:   0,
+	Color.red:     0,
+	Color.green:   255,
+	Color.yellow:  255,
+	Color.blue:    0,
+	Color.magenta: 0,
+	Color.cyan:    255,
+	Color.white:   255,
+];
+private immutable ubyte[Color.max+1] bright_color_to_b = [
+	Color.black:   0,
+	Color.red:     0,
+	Color.green:   0,
+	Color.yellow:  0,
+	Color.blue:    255,
+	Color.magenta: 255,
+	Color.cyan:    255,
+	Color.white:   255,
+];
 
 private SDL_Window* window;
 private SDL_Renderer* renderer;
@@ -242,7 +272,7 @@ Key readKey()
 	// All alphanumeric keys and
 	// '[', ']', '\', ';', '\'', ',', '.', '/' are valid here.
 	if ((event.key.keysym.mod & KMOD_SHIFT)
-	&& (event.key.keysym.sym in keycode_to_key) !is null) {
+	&& (event.key.keysym.sym in alnum_keycode_to_shifted_key) !is null) {
 		return alnum_keycode_to_shifted_key[event.key.keysym.sym];
 	}
 
@@ -267,10 +297,17 @@ void refresh()
 				w: symbol_width,
 				h: symbol_height,
 			};
-			SDL_SetTextureColorMod(codepage,
-				color_to_r[symbol_array[index].color],
-				color_to_g[symbol_array[index].color],
-				color_to_b[symbol_array[index].color]);
+			if (symbol_array[index].is_bright) {
+				SDL_SetTextureColorMod(codepage,
+					bright_color_to_r[symbol_array[index].color],
+					bright_color_to_g[symbol_array[index].color],
+					bright_color_to_b[symbol_array[index].color]);
+			} else {
+				SDL_SetTextureColorMod(codepage,
+					color_to_r[symbol_array[index].color],
+					color_to_g[symbol_array[index].color],
+					color_to_b[symbol_array[index].color]);
+			}
 			SDL_RenderCopy(renderer, codepage, &srcrect, &destrect);
 		}
 	}

@@ -1,19 +1,29 @@
 import std.stdio;
 import util;
+import serializer;
 import term;
 import actor;
 import map;
 
 class Game
 {
+	mixin Serializable;
 	immutable int camera_width = 23, camera_height = 23;
 	Map map;
-	@("NotSaved") PlayerActor player;
+	@noser PlayerActor player;
 	private int camera_x, camera_y;
 
-	this() {
+	this()
+	{
 		map = new Map(300, 300);
 	}
+
+	this(Serializer serializer) { this(); }
+
+	/*override void beforesave(Serializer serializer) {}
+	override void beforeload(Serializer serializer) {}
+	override void aftersave(Serializer serializer) {}
+	override void afterload(Serializer serializer) {}*/
 
 	void spawn(Actor actor, int x, int y)
 	{
@@ -26,13 +36,15 @@ class Game
 		actor.is_despawned = true;
 	}
 
-	void run() { 
+	void run()
+	{ 
 		while (true) {
 			map.update();
 		}
 	}
 
-	void draw() {
+	void draw()
+	{
 		map.draw(camera_x, camera_y, 0, 0, 23, 23);
 	}
 

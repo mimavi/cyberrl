@@ -2,20 +2,81 @@ import std.container;
 import std.math;
 import util;
 import term;
+import serializer;
 import main;
 import menu;
 import item;
 import game;
 
-class Actor
+// XXX: I think this mixin business would be considered ugly by some people.
+// Any better idea how to handle this better?
+
+private string statMinus5To5Mixin(string name, string displayed_name)
 {
-	Game game;
-	@("Saved") Array!Item items;
+	return "private int _"~name~";"
+	~"@property int "~name~"() { return _"~name~"; }"
+	~"string "~name~"_str()"
+	~"{ return val_to_minus_5_to_5_adjective[_"~name~"]~\" "
+	~displayed_name~"\"; }";
+}
+
+private string stat0To5Mixin(string name, string displayed_name)
+{
+	return "private int _"~name~";"
+	~"@property int "~name~"() { return _"~name~"; }"
+	~"string "~name~"_str()"
+	~"{ return val_to_0_to_5_adjective[_"~name~"]~\" "
+	~displayed_name~"\"; }";
+}
+
+// XXX: Perhaps this should be a struct,
+// or maybe even just an associative array?
+class ActorStats
+{
+	// The body attributes.
+	mixin (statMinus5To5Mixin("strength", "strength"));
+	mixin (statMinus5To5Mixin("dexterity", "dexterity"));
+	mixin (statMinus5To5Mixin("agility", "agility"));
+	mixin (statMinus5To5Mixin("endurance", "endurance"));
+	// The mind attributes.
+	mixin (statMinus5To5Mixin("reflex", "reflex"));
+	mixin (statMinus5To5Mixin("observantness", "observantness"));
+	mixin (statMinus5To5Mixin("intelligence", "intelligence"));
+	// The technical skills.
+	mixin (stat0To5Mixin("constructing", "constructing"));
+	mixin (stat0To5Mixin("repairing", "repairing"));
+	mixin (stat0To5Mixin("modding", "modding"));
+	mixin (stat0To5Mixin("hacking", "hacking"));
+	// The combat skills.
+	mixin (stat0To5Mixin("striking", "striking"));
+	mixin (stat0To5Mixin("aiming", "aiming"));
+	mixin (stat0To5Mixin("extrapolating", "extrapolating"));
+	mixin (stat0To5Mixin("throwing", "throwing"));
+	mixin (stat0To5Mixin("dodging", "dodging"));
+	// The knowledges.
+	mixin (stat0To5Mixin("ballistics", "ballistics"));
+	mixin (stat0To5Mixin("explosives", "explosives"));
+	mixin (stat0To5Mixin("lasers", "lasers"));
+	mixin (stat0To5Mixin("plasma", "plasma"));
+	mixin (stat0To5Mixin("electromagnetism", "electromagnetism"));
+	mixin (stat0To5Mixin("computers", "computers"));
+	//int strength, agility, endurance; // The body attributes.
+	//int reactiontime, observantness, intelligence; // The mind attributes.
+	//int constructing, repairing, hacking, modding; // The technical skills.
+	//int striking, aiming, throwing, dodging; // The combat skills.
+	//int ballistics, laser, plasma, electromagnetism; // The knowledges.
+}
+
+class Actor// : Saved
+{
+	mixin Serializable;
+	@noser Game game;
+	Array!Item items;
 	bool is_despawned = false;
 	private int _x, _y;
 
 	abstract void update();
-	abstract @property Symbol symbol();
+	@property abstract Symbol symbol();
 
 	@property int x() { return _x; }
 	@property int y() { return _y; }
@@ -24,6 +85,13 @@ class Actor
 	{
 		items = Array!Item();
 	}
+
+	this(Serializer serializer) { this(); }
+
+	/*this(Serializer serializer)
+	{
+		load(serializer);
+	}*/
 
 	void draw(int x, int y)
 	{
@@ -44,11 +112,11 @@ class Actor
 	}
 
 	// NOTE:
-	// `act_*` methods are designed to be completely safe.
+	// The `act*` methods shall be designed to be completely safe.
 	// No matter what input they get, they MUST NOT throw any exception,
-	// error or cause crashing or freezing.
+	// error or cause any crashing or freezing.
 
-	bool act_move_to(int x, int y)
+	bool actMoveTo(int x, int y)
 	{
 		// Must be an adjacent tile.
 		if (abs(x-_x) > 1 || abs(y-_y) > 1) {
@@ -63,7 +131,7 @@ class Actor
 		return true;
 	}
 
-	bool act_pick_up(int index)
+	bool actPickUp(int index)
 	{
 		if (index < 0 || index >= game.map.getTile(x, y).items.length) {
 			return false;
@@ -75,7 +143,7 @@ class Actor
 		return true;
 	}
 
-	bool act_drop(int index)
+	bool actDrop(int index)
 	{
 		if (index < 0 || index >= items.length) {
 			return false;
@@ -90,7 +158,22 @@ class Actor
 
 class PlayerActor : Actor
 {
+	mixin InheritedSerializable;
 	override @property Symbol symbol() { return Symbol('@'); }
+
+	this() {}
+	this(Serializer serializer) { this(); }
+
+	/*this(Serializer serializer)
+	{
+		load(serializer);
+	}*/
+
+	/*static PlayerActor make(Serializer serializer)
+	{
+		return new PlayerActor(serializer);
+	}*/
+
 	override void initPos(int x, int y)
 	{
 		super.initPos(x, y);
@@ -105,20 +188,20 @@ class PlayerActor : Actor
 			auto key = term.readKey();
 			if (key >= Key.digit_1 && key <= Key.digit_9) {
 				has_acted = 
-					act_move_to(x+util.key_to_x[key], y+util.key_to_y[key]);
+					actMoveTo(x+util.key_to_x[key], y+util.key_to_y[key]);
 			} else if (key == Key.g) {
 				int index;
-				if (menu.select_item(game.map.getTile(x, y).items,
+				if (menu.selectItem(game.map.getTile(x, y).items,
 					"Select item to pick up:", index))
 				{
-					has_acted = act_pick_up(index);
+					has_acted = actPickUp(index);
 				}
 			} else if (key == Key.d) {
 				int index;
-				if (menu.select_item(items,
+				if (menu.selectItem(items,
 					"Select item to drop:", index))
 				{
-					has_acted = act_drop(index);
+					has_acted = actDrop(index);
 				}
 			}
 		} while(!has_acted);
@@ -128,6 +211,11 @@ class PlayerActor : Actor
 
 class AiActor : Actor
 {
+	/*this(Serializer serializer)
+	{
+		load(serializer);
+	}*/
+
 	override void update()
 	{
 

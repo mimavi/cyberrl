@@ -2,6 +2,7 @@ import std.container;
 import std.range;
 import std.math;
 import util;
+import serializer;
 import term;
 import tile;
 import actor;
@@ -9,19 +10,18 @@ import item;
 
 class Map
 {
+	mixin Serializable;
 	private Tile[] tiles;
 	private DList!Actor actors;
 	private Tile tmp;
 	private int _width, _height;
 	@property int width() { return _width; }
 	@property int height() { return _height; }
-	ref Tile getTile(int x, int y)
+
+	this(Serializer serializer)
 	{
-		if (x < 0 || y < 0 || x >= _width || y >= _width) {
-			tmp = new WallTile;
-			return tmp;
-		}
-		return tiles[x+y*_width];
+		this(serializer.load!(int)("_width"),
+			serializer.load!(int)("_height"));
 	}
 
 	this(int width, int height)
@@ -35,6 +35,15 @@ class Map
 			}
 		}
 		actors = DList!Actor();
+	}
+
+	ref Tile getTile(int x, int y)
+	{
+		if (x < 0 || y < 0 || x >= _width || y >= _width) {
+			tmp = new WallTile;
+			return tmp;
+		}
+		return tiles[x+y*_width];
 	}
 
 	void addActor(Actor actor, int x, int y)

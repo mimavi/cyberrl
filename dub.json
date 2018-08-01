@@ -4,7 +4,6 @@
 	"sourcePaths": ["src"],
 	"importPaths": ["src"],
 	"dependencies": {
-		"orange": "*"
 	},
 	"subPackages": [
 	{
@@ -12,7 +11,7 @@
 		"targetName": "cyberrl-ncurses",
 		"sourcePaths": ["src", "ncurses"],
 		"dependencies": {
-			"ncurses": "*"
+			"ncurses": "*",
 		}
 	},
 	{
@@ -20,7 +19,7 @@
 		"targetName": "cyberrl-sdl2",
 		"sourcePaths": ["src", "sdl2"],
 		"dependencies": {
-			"derelict-sdl2": "*"
+			"derelict-sdl2": "*",
 		}
 	}]
 }

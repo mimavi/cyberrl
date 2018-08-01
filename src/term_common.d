@@ -8,7 +8,8 @@ Symbol[term_width*term_height] symbol_array;
 
 enum Key
 {
-	// We do not separate keypad keys.
+	none,
+	// We do not separate keypad keys from arrows.
 	digit_0,
 	digit_1, digit_2, digit_3,
 	digit_4, digit_5, digit_6,
@@ -96,6 +97,16 @@ void write(int x, int y, string str,
 	foreach(int i, char c; str) {
 		setSymbol(x+i, y, Symbol(c, color, bg_color, is_bright));
 	}
+}
+
+void write(int x, int y, string str, bool is_bright)
+{
+	write(x, y, str, Color.white, Color.black, is_bright);
+}
+
+void write(int x, int y, string str, Color color, bool is_bright)
+{
+	write(x, y, str, color, Color.black, is_bright);
 }
 
 void clear()

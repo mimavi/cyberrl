@@ -62,108 +62,41 @@ char[chr_to_index.length] index_to_chr = [
 	60: '8', 61: '9',
 ];
 
-class SaveManager
+immutable string[int] val_to_minus_5_to_5_adjective;
+immutable string[int] val_to_0_to_5_adjective;
+
+static this()
 {
-	private JSONValue tree;
-	private Array!JSONValue nodes;
+	val_to_minus_5_to_5_adjective = [
+		-5: "extremely low",
+		-4: "incredibly low",
+		-3: "very low",
+		-2: "low",
+		-1: "below average",
+		0: "average",
+		1: "above average",
+		2: "high",
+		3: "very high",
+		4: "incredibly high",
+		5: "extremely high",
+	];
+	val_to_0_to_5_adjective = [
+		0: "unskilled in",
+		1: "novice in",
+		2: "skilled in",
+		3: "accomplished in",
+		4: "excellent in",
+		5: "master in",
+	];
+}
 
-	this()
-	{
-		nodes = Array!JSONValue();
-		nodes.insertBack(JSONValue((JSONValue[string]).init));
+// XXX: Perhaps this function should be template'd.
+// TODO: Add unittests for this function.
+int umod(int dividend, int divisor)
+{
+	int signed_modulo = dividend%divisor;
+	if (signed_modulo < 0) {
+		return divisor+signed_modulo;
 	}
-
-	void save(T)(T var/*, File file*/)
-	{
-		/*foreach (k; __traits(allMembers, T)) {
-			writeln(k);
-			static if (k != "Monitor") {
-				alias T2 = typeof(__traits(getMember, var, k));
-				static if (isScalarType!T2) {
-					writeln("scalar");
-					auto v = __traits(getMember, var, k);
-					saveScalar!T2(v);
-				}
-			}
-		}*/
-		insert(var);
-		writeln(nodes.front.toString);
-	}
-
-	T load(T)(File file)
-	{
-	}
-
-	private void insert(T)(T var)
-	{
-		static if (is(T == Array!S, S)
-		|| is(T == SList!S, S)
-		|| is(T == DList!S, S)) {
-			int i = 0;
-			foreach (v; var[]) {
-				writeln("a: ", i, " ", v);
-				++i;
-			}
-		} else static if (isAggregateType!T) {
-			writeln("x");
-			static if (is(T == class)) {
-				if (var is null) {
-					return;
-				}
-			}
-			insertAggregate(var);
-			//auto names2 = FieldNameTuple!(BaseTypeTuple!T);
-			//writeln("yy ", [names2]);
-		}
-	}
-
-	void insertAggregate(T)(T var)
-	{
-		alias names = FieldNameTuple!T;
-		writeln("y: ", [names], " ", T.stringof);
-		foreach (k, v; var.tupleof) {
-			writeln("b: ", k, " ", names[k], " "/*, v*/);
-			/*foreach (k, S; __traits(getAttributes, v)) {
-				writeln("j: ", k, " ", S.stringof);
-			}*/
-			import game;
-			static if (is(T == Game)) {
-				pragma(msg, names[k]);
-				pragma(msg, hasUDA!(v, "NotSaved"));
-			}
-			static if (isScalarType!(typeof(v))) {
-				writeln("c");
-				nodes.back[names[k]] = JSONValue(v);
-			} else { 
-				writeln("d: ", names[k]);
-				nodes.back[names[k]] = JSONValue((JSONValue[string]).init);
-				nodes.insertBack(nodes.back[names[k]]);
-				insert(v);
-				nodes.removeBack();
-			}
-			
-			/*else static if (is(typeof(v) == Array!S, S)
-			|| is(typeof(v) == SList!S, S)
-			|| is(typeof(v) == DList!S, S)) {
-				nodes.back[names[k]] = JSONValue(cast(int[])[]);
-				//for (int i = 0; i < v.length; ++i) {
-					//nodes.back[names[k]][i] = v[i];
-				//}
-				int i = 0;
-				foreach (u; v[]) {
-					//nodes.back[names[k]][i] = u;
-					//++i;
-				}
-			} else static if (isAggregateType!(typeof(v))) {
-				writeln("is aggregate");
-				nodes.insertBack(JSONValue(names[k]));
-				insert(v);
-				nodes.removeBack();
-			}*/
-		}
-		foreach (k, S; BaseTypeTuple!T) {
-			writeln("q: ", S.stringof);
-			//insertAggregate(cast(S)var);
-		}
-	}
+	return signed_modulo;
 }

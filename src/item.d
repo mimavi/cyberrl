@@ -1,9 +1,14 @@
 import term;
+import util;
+import serializer;
 
 class Item
 {
-	abstract @property Symbol symbol();
-	abstract @property string name();
+	mixin Serializable;
+	@property abstract Symbol symbol();
+	@property abstract string name();
+
+	this() {}
 
 	void draw(int x, int y)
 	{
@@ -13,6 +18,14 @@ class Item
 
 class LightkatanaItem : Item
 {
-	override @property Symbol symbol() { return Symbol('/', Color.cyan); }
-	override @property string name() { return "lightkatana"; }
+	mixin InheritedSerializable;
+	@property override Symbol symbol() { return Symbol('/', Color.cyan); }
+	@property override string name() { return "lightkatana"; }
+
+	this() {}
+	this(Serializer serializer) { this(); }
+	/*this(Serializer serializer)
+	{
+		load(serializer);
+	}*/
 }
