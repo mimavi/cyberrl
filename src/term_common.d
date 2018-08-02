@@ -8,7 +8,7 @@ Symbol[term_width*term_height] symbol_array;
 
 enum Key
 {
-	none,
+	none = -1,
 	// We do not separate keypad keys from arrows.
 	digit_0,
 	digit_1, digit_2, digit_3,
