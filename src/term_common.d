@@ -9,7 +9,7 @@ Symbol[term_width*term_height] symbol_array;
 enum Key
 {
 	none = -1,
-	// We do not separate keypad keys from arrows.
+	//arrow, keypad and number keys all map to Key.digit_[0-9]
 	digit_0,
 	digit_1, digit_2, digit_3,
 	digit_4, digit_5, digit_6,

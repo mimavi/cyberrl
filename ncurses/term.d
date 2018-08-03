@@ -4,7 +4,15 @@ static import ncurses = deimos.ncurses;
 
 public import term_common;
 
-private Key[96] ascii_to_key = [
+private Key[128] ascii_to_key = [
+	Key.none, Key.none, Key.none, Key.none,
+	Key.none, Key.none, Key.none, Key.none,
+	Key.none, Key.tab, Key.enter, Key.none,
+	Key.none, Key.none, Key.none, Key.none,
+	Key.none, Key.none, Key.none, Key.none,
+	Key.none, Key.none, Key.none, Key.none,
+	Key.none, Key.none, Key.none, Key.escape,
+	Key.none, Key.none, Key.none, Key.none,
 	Key.space, Key.exclam, Key.quote, Key.hash,
 	Key.dollar, Key.percent, Key.ampersand, Key.apostrophe,
 	Key.lparen, Key.rparen, Key.asterisk, Key.plus,
@@ -31,8 +39,17 @@ private Key[96] ascii_to_key = [
 	Key.vbar, Key.rbrace, Key.tilde, Key.del
 ];
 
+private Key[int] keycode_to_key;
+
 static this()
 {
+	keycode_to_key = [
+		ncurses.KEY_DOWN: Key.digit_2,
+		ncurses.KEY_UP: Key.digit_8,
+		ncurses.KEY_LEFT: Key.digit_4,
+		ncurses.KEY_RIGHT: Key.digit_6,
+	];
+
 	ncurses.initscr();
 	ncurses.cbreak();
 	ncurses.keypad(ncurses.stdscr, true);
@@ -40,7 +57,7 @@ static this()
 	ncurses.start_color();
 	for (Color fg; fg <= Color.max; fg++) {
 		for (Color bg; bg <= Color.max; bg++) {
-			ncurses.init_pair(cast(short)(fg+bg*Color.max+1),
+			ncurses.init_pair(cast(short)(fg+bg*(Color.max+1)),
 			                  cast(short)fg,
 			                  cast(short)bg);
 		}
@@ -57,8 +74,11 @@ Key readKey()
 	refresh();
 	while (true) {
 		int code = ncurses.getch();
-		if (' ' <= code && code <= 127) {
-			return ascii_to_key[code - 32];
+		if (0 <= code && code <= 127) {
+			return ascii_to_key[code];
+		}
+		else if (code in keycode_to_key) {
+			return keycode_to_key[code];
 		}
 	}
 }
@@ -70,7 +90,7 @@ void refresh()
 			Symbol symbol = symbol_array[x+y*term_width];
 			ulong color_pair = ncurses.COLOR_PAIR(
 				cast(short)(symbol.color+symbol.bg_color*(Color.max+1)));
-			ncurses.attron(symbol.is_bright ?
+			ncurses.attrset(symbol.is_bright ?
 			               color_pair | ncurses.A_BOLD :
 			               color_pair);
 			ncurses.mvaddch(cast(int)y, cast(int)x, symbol.chr);
