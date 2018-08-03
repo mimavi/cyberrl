@@ -28,7 +28,7 @@ void mainMenu()
 	do {
 		term.clear();
 		foreach (int i, v; label_strs) {
-			term.write(labels_x, labels_y+i, v, i == pos);
+			term.write(labels_x, labels_y+i, v, i == pos? Color.red : Color.white);
 		}
 		key = term.readKey();
 		if (key == Key.digit_2) {
