@@ -45,7 +45,7 @@ void main()
 		//main_game.run();
 		//menu.mainMenu();
 		//menu.dualList(["a", "bb", "ccc"], ["d", "ee", "fff"], 0, false, null);
-		menu.newGameMenu();
+		menu.mainMenu();
 	}
 	// TODO: Better error and exception handling.
 	catch (Error e) {

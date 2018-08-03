@@ -13,6 +13,47 @@ import tile;
 import actor;
 import item;
 
+// TODO: Function that will cover both `mainMenu()` and `inGameMenu()`.
+void mainMenu()
+{
+	immutable string[] label_strs = [
+		"New Game",
+		"Load Game",
+		"Quit",
+	];
+	immutable int labels_x = 35;
+	immutable int labels_y = 22/2-label_strs.length/2;
+	int pos = 0;
+	Key key;
+	do {
+		term.clear();
+		foreach (int i, v; label_strs) {
+			term.write(labels_x, labels_y+i, v, i == pos);
+		}
+		key = term.readKey();
+		if (key == Key.digit_2) {
+			pos = umod(pos+1, label_strs.length);
+		} else if (key == Key.digit_8) {
+			pos = umod(pos-1, label_strs.length);
+		} else if (key == Key.escape) {
+			pos = label_strs.length-1; // Last label is "Quit".
+		}
+		if (key == Key.enter) {
+			if (pos == 0) {
+				newGameMenu();
+			} else if (pos == 1) {
+				//loadGameMenu();
+			}
+		}
+		// `pos == 2` means quit.
+	} while (key != Key.enter || pos != 2);
+}
+
+void drawMainMenu()
+{
+
+}
+
 void newGameMenu()
 {
 	immutable int max_name_length = 32;
@@ -209,6 +250,43 @@ void newGameMenuDecrementStat(ActorStats stats, ActorStat stat,
 			assert(false);
 		}
 	}
+}
+
+// Return false if quitting.
+bool inGameMenu(Game game)
+{
+	immutable string[] label_strs = [
+		"Return to Game",
+		"Save Game and Quit",
+		"Quit Game without Saving"
+	];
+	immutable int labels_x = 28;
+	immutable int labels_y = 22/2-label_strs.length/2;
+	Key key;
+	int pos = 0;
+	do {
+		term.clear();
+		foreach (int i, v; label_strs) {
+			term.write(labels_x, labels_y+i, v, i == pos);
+		}
+		key = term.readKey();
+		if (key == Key.digit_2) {
+			pos = umod(pos+1, label_strs.length);
+		} else if (key == Key.digit_8) {
+			pos = umod(pos-1, label_strs.length);
+		} else if (key == Key.escape) {
+			pos = label_strs.length-1; // Last label is "Quit".
+		}
+	} while (key != Key.enter);
+
+	if (pos == 1) {
+		// TODO: Do saving here.
+		return false;
+	} else if (pos == 2) {
+		return false;
+	}
+
+	return true;
 }
 
 void dualList(string[term_height] left_strs,

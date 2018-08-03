@@ -52,15 +52,18 @@ class Map
 		actor.initPos(x, y);
 	}
 
-	void update()
+	bool update()
 	{
 		for (auto range = actors[]; !range.empty; range.popFront()) {
 			if (range.front.is_despawned) {
 				actors.popFirstOf(range);
 			} else {
-				range.front.update();
+				if (!range.front.update()) {
+					return false;
+				}
 			}
 		}
+		return true;
 	}
 
 	void draw(int src_x, int src_y, int dest_x, int dest_y,

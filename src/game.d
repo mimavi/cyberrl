@@ -38,9 +38,8 @@ class Game
 
 	void run()
 	{ 
-		while (true) {
-			map.update();
-		}
+		while(map.update())
+		{}
 	}
 
 	void draw()

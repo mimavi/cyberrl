@@ -9,68 +9,6 @@ import menu;
 import item;
 import game;
 
-// XXX: I think this mixin business is ugly.
-// Any idea how to handle this better?
-// Perhaps use template mixins instead?
-
-/*private string statMinus5To5Mixin(string name, string displayed_name)
-{
-	return "private int _"~name~";"
-	~"@property int "~name~"() { return _"~name~"; }"
-	~"string "~name~"_str()"
-	~"{ return val_to_minus_5_to_5_adjective[_"~name~"]~\" "
-	~displayed_name~"\"; }"
-	~"@property void "~name~"(int val)"
-	~"{ _"~name~" = min(5, max(-5, val)); }";
-}
-
-private string stat0To5Mixin(string name, string displayed_name)
-{
-	return "private int _"~name~";"
-	~"@property int "~name~"() { return _"~name~"; }"
-	~"string "~name~"_str()"
-	~"{ return val_to_0_to_5_adjective[_"~name~"]~\" "
-	~displayed_name~"\"; }";
-}*/
-
-// XXX: Perhaps this should be a struct,
-// or maybe even just an associative array?
-//class ActorStats
-//{
-	/*// The body attributes.
-	mixin (statMinus5To5Mixin("strength", "strength"));
-	mixin (statMinus5To5Mixin("dexterity", "dexterity"));
-	mixin (statMinus5To5Mixin("agility", "agility"));
-	mixin (statMinus5To5Mixin("endurance", "endurance"));
-	// The mind attributes.
-	mixin (statMinus5To5Mixin("reflex", "reflex"));
-	mixin (statMinus5To5Mixin("observantness", "observantness"));
-	mixin (statMinus5To5Mixin("intelligence", "intelligence"));
-	// The technical skills.
-	mixin (stat0To5Mixin("constructing", "constructing"));
-	mixin (stat0To5Mixin("repairing", "repairing"));
-	mixin (stat0To5Mixin("modding", "modding"));
-	mixin (stat0To5Mixin("hacking", "hacking"));
-	// The combat skills.
-	mixin (stat0To5Mixin("striking", "striking"));
-	mixin (stat0To5Mixin("aiming", "aiming"));
-	mixin (stat0To5Mixin("extrapolating", "extrapolating"));
-	mixin (stat0To5Mixin("throwing", "throwing"));
-	mixin (stat0To5Mixin("dodging", "dodging"));
-	// The knowledges.
-	mixin (stat0To5Mixin("ballistics", "ballistics"));
-	mixin (stat0To5Mixin("explosives", "explosives"));
-	mixin (stat0To5Mixin("lasers", "lasers"));
-	mixin (stat0To5Mixin("plasma", "plasma"));
-	mixin (stat0To5Mixin("electromagnetism", "electromagnetism"));
-	mixin (stat0To5Mixin("computers", "computers"));*/
-	//int strength, agility, endurance; // The body attributes.
-	//int reactiontime, observantness, intelligence; // The mind attributes.
-	//int constructing, repairing, hacking, modding; // The technical skills.
-	//int striking, aiming, throwing, dodging; // The combat skills.
-	//int ballistics, laser, plasma, electromagnetism; // The knowledges.
-//}
-
 // XXX: Perhaps this should be renamed to something clearer, i.e.
 // `ActorStatIndex`.
 enum ActorStat
@@ -207,7 +145,8 @@ class Actor// : Saved
 	bool is_despawned = false;
 	private int _x, _y;
 
-	abstract void update();
+	// Return false if Map.update() should return.
+	abstract bool update();
 	@property abstract Symbol symbol();
 
 	@property int x() { return _x; }
@@ -292,7 +231,10 @@ class Actor// : Saved
 class PlayerActor : Actor
 {
 	mixin InheritedSerializable;
-	override @property Symbol symbol() { return Symbol('@'); }
+	override @property Symbol symbol()
+	{
+		return Symbol('@', Color.white, Color.black, true);
+	}
 
 	this() {}
 	this(Serializer serializer) { this(); }
@@ -313,13 +255,17 @@ class PlayerActor : Actor
 		main_game.centerizeCamera(x, y);
 	}
 
-	override void update()
+	override bool update()
 	{
 		bool has_acted = false;
 		do {
 			main_game.draw();
 			auto key = term.readKey();
-			if (key >= Key.digit_1 && key <= Key.digit_9) {
+			if (key == Key.escape) {
+				if (!menu.inGameMenu(game)) {
+					return false;
+				}
+			} else if (key >= Key.digit_1 && key <= Key.digit_9) {
 				has_acted = 
 					actMoveTo(x+util.key_to_x[key], y+util.key_to_y[key]);
 			} else if (key == Key.g) {
@@ -338,7 +284,8 @@ class PlayerActor : Actor
 				}
 			}
 		} while(!has_acted);
-
+		
+		return true;
 	}
 }
 
@@ -349,8 +296,8 @@ class AiActor : Actor
 		load(serializer);
 	}*/
 
-	override void update()
+	override bool update()
 	{
-
+		return true;
 	}
 }
