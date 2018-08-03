@@ -22,7 +22,7 @@ void mainMenu()
 		"Quit",
 	];
 	immutable int labels_x = 35;
-	immutable int labels_y = 22/2-label_strs.length/2;
+	immutable int labels_y = 22/2-cast (int) label_strs.length/2;
 	int pos = 0;
 	Key key;
 	do {
@@ -32,11 +32,11 @@ void mainMenu()
 		}
 		key = term.readKey();
 		if (key == Key.digit_2) {
-			pos = umod(pos+1, label_strs.length);
+			pos = umod(pos+1, cast (int) label_strs.length);
 		} else if (key == Key.digit_8) {
-			pos = umod(pos-1, label_strs.length);
+			pos = umod(pos-1, cast (int) label_strs.length);
 		} else if (key == Key.escape) {
-			pos = label_strs.length-1; // Last label is "Quit".
+			pos = cast (int) label_strs.length-1; // Last label is "Quit".
 		}
 		if (key == Key.enter) {
 			if (pos == 0) {
@@ -261,7 +261,7 @@ bool inGameMenu(Game game)
 		"Quit Game without Saving"
 	];
 	immutable int labels_x = 28;
-	immutable int labels_y = 22/2-label_strs.length/2;
+	immutable int labels_y = 22/2-cast (int) label_strs.length/2;
 	Key key;
 	int pos = 0;
 	do {
@@ -271,11 +271,11 @@ bool inGameMenu(Game game)
 		}
 		key = term.readKey();
 		if (key == Key.digit_2) {
-			pos = umod(pos+1, label_strs.length);
+			pos = umod(pos+1, cast (int) label_strs.length);
 		} else if (key == Key.digit_8) {
-			pos = umod(pos-1, label_strs.length);
+			pos = umod(pos-1, cast (int) label_strs.length);
 		} else if (key == Key.escape) {
-			pos = label_strs.length-1; // Last label is "Quit".
+			pos = cast (int) label_strs.length-1; // Last label is "Quit".
 		}
 	} while (key != Key.enter);
 
