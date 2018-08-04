@@ -98,9 +98,9 @@ mixin template InheritedSerializable()
 
 class Serializer
 {
-	JSONValue*[] stack;
-	JSONValue root;
-	@property str() { return root.toString; }
+	private JSONValue*[] stack;
+	private JSONValue root;
+	@property str() { return root.toPrettyString(); }
 	@property str(string str) { root = parseJSON(str); }
 
 	this()

@@ -1,5 +1,5 @@
 import std.algorithm.comparison;
-import std.stdio; // XXX.
+import std.stdio;
 import std.random; // XXX.
 import std.datetime; // XXX.
 import std.math;
@@ -28,7 +28,7 @@ void mainMenu()
 	do {
 		term.clear();
 		foreach (int i, v; label_strs) {
-			term.write(labels_x, labels_y+i, v, i == pos? Color.red : Color.white);
+			term.write(labels_x, labels_y+i, v, i == pos);
 		}
 		key = term.readKey();
 		if (key == Key.digit_2) {
@@ -261,9 +261,10 @@ bool inGameMenu(Game game)
 		"Quit Game without Saving"
 	];
 	immutable int labels_x = 28;
-	immutable int labels_y = 22/2-cast (int) label_strs.length/2;
+	immutable int labels_y = 22/2-cast(int)label_strs.length/2;
 	Key key;
 	int pos = 0;
+
 	do {
 		term.clear();
 		foreach (int i, v; label_strs) {
@@ -271,16 +272,21 @@ bool inGameMenu(Game game)
 		}
 		key = term.readKey();
 		if (key == Key.digit_2) {
-			pos = umod(pos+1, cast (int) label_strs.length);
+			pos = umod(pos+1, cast(int)label_strs.length);
 		} else if (key == Key.digit_8) {
-			pos = umod(pos-1, cast (int) label_strs.length);
+			pos = umod(pos-1, cast(int)label_strs.length);
 		} else if (key == Key.escape) {
-			pos = cast (int) label_strs.length-1; // Last label is "Quit".
+			pos = cast(int)label_strs.length-1; // Last label is "Quit".
 		}
 	} while (key != Key.enter);
 
 	if (pos == 1) {
 		// TODO: Do saving here.
+		game.write();
+		//Serializer serializer = new Serializer;
+		//game.save(serializer);
+		//auto file = File("saves/"~game.id~".json")
+		//writeln(serializer.root.toString);
 		return false;
 	} else if (pos == 2) {
 		return false;
