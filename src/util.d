@@ -90,11 +90,10 @@ static this()
 	];
 }
 
-// XXX: Perhaps this function should be template'd.
 // TODO: Add unittests for this function.
-int umod(int dividend, int divisor)
+Signed!T1 umod(T1, T2)(T1 dividend, T2 divisor)
 {
-	int signed_modulo = dividend%divisor;
+	Signed!T1 signed_modulo = dividend%divisor;
 	if (signed_modulo < 0) {
 		return divisor+signed_modulo;
 	}

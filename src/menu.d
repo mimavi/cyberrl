@@ -1,5 +1,9 @@
 import std.algorithm.comparison;
+import std.algorithm.sorting; // XXX.
+import std.functional;
+import std.array;
 import std.stdio;
+import std.file;
 import std.random; // XXX.
 import std.datetime; // XXX.
 import std.math;
@@ -16,45 +20,14 @@ import item;
 // TODO: Function that will cover both `mainMenu()` and `inGameMenu()`.
 void mainMenu()
 {
-	immutable string[] label_strs = [
-		"New Game",
-		"Load Game",
-		"Quit",
-	];
-	immutable int labels_x = 35;
-	immutable int labels_y = 22/2-cast (int) label_strs.length/2;
-	int pos = 0;
-	Key key;
-	do {
-		term.clear();
-		foreach (int i, v; label_strs) {
-			term.write(labels_x, labels_y+i, v, i == pos);
-		}
-		key = term.readKey();
-		if (key == Key.digit_2) {
-			pos = umod(pos+1, cast (int) label_strs.length);
-		} else if (key == Key.digit_8) {
-			pos = umod(pos-1, cast (int) label_strs.length);
-		} else if (key == Key.escape) {
-			pos = cast (int) label_strs.length-1; // Last label is "Quit".
-		}
-		if (key == Key.enter) {
-			if (pos == 0) {
-				newGameMenu();
-			} else if (pos == 1) {
-				//loadGameMenu();
-			}
-		}
-		// `pos == 2` means quit.
-	} while (key != Key.enter || pos != 2);
+	while(centeredList(["New Game", "Load Game", "Quit"],
+		[toDelegate(&newGameMenu),
+		toDelegate(&loadGameMenu),
+		delegate bool() { return false; }]))
+	{}
 }
 
-void drawMainMenu()
-{
-
-}
-
-void newGameMenu()
+bool newGameMenu()
 {
 	immutable int max_name_length = 32;
 	// XXX: Perhaps this could be optimized.
@@ -154,12 +127,12 @@ void newGameMenu()
 			right_strs[i] = (right_stats[i] == ActorStat.none)?
 				"" : "  "~main_game.player.stats.toString(right_stats[i]);
 		}
-		dualList(left_strs, right_strs, key, pos, is_right_side);
+		dualListNonblocking(left_strs, right_strs, key, pos, is_right_side);
 		key = term.readKey();
 	} while (key != Key.enter && key != Key.escape);
 
 	if (key == Key.enter) {
-		main_game.spawn(main_game.player, 10, 10);
+		main_game.map.spawn(main_game.player, 10, 10);
 		auto rng = Random(
 			cast(uint) Clock.currTime().fracSecs().total!"hnsecs");
 		foreach (i; 1..10000) {
@@ -175,6 +148,8 @@ void newGameMenu()
 		main_game.centerizeCamera(main_game.player.x, main_game.player.y);
 		main_game.run();
 	}
+
+	return true;
 }
 
 void drawNewGameMenu(string name, ActorStats stats, int pos,
@@ -252,50 +227,93 @@ void newGameMenuDecrementStat(ActorStats stats, ActorStat stat,
 	}
 }
 
-// Return false if quitting.
-bool inGameMenu(Game game)
+bool loadGameMenu()
 {
-	immutable string[] label_strs = [
-		"Return to Game",
-		"Save Game and Quit",
-		"Quit Game without Saving"
-	];
-	immutable int labels_x = 28;
-	immutable int labels_y = 22/2-cast(int)label_strs.length/2;
-	Key key;
-	int pos = 0;
-
-	do {
-		term.clear();
-		foreach (int i, v; label_strs) {
-			term.write(labels_x, labels_y+i, v, i == pos);
-		}
-		key = term.readKey();
-		if (key == Key.digit_2) {
-			pos = umod(pos+1, cast(int)label_strs.length);
-		} else if (key == Key.digit_8) {
-			pos = umod(pos-1, cast(int)label_strs.length);
-		} else if (key == Key.escape) {
-			pos = cast(int)label_strs.length-1; // Last label is "Quit".
-		}
-	} while (key != Key.enter);
-
-	if (pos == 1) {
-		// TODO: Do saving here.
-		game.write();
-		//Serializer serializer = new Serializer;
-		//game.save(serializer);
-		//auto file = File("saves/"~game.id~".json")
-		//writeln(serializer.root.toString);
-		return false;
-	} else if (pos == 2) {
-		return false;
+	//alias less = (string x, string y) => to!ulong(x[1..$-5]) < to!ulong(y[1..$-5]);
+	// TODO: Sort the filenames.
+	string[] filenames;
+	foreach (DirEntry v; dirEntries("saves", "*.json", SpanMode.shallow)) {
+		// TODO: Cache the save headers in additional files,
+		// so the list of saves can be displayed
+		// without reading the entire saves.
+		++filenames.length;
+		filenames[$-1] = v.name;
 	}
+	int pos = 0;
+	bool result = centeredList(filenames, [], pos);
+	if (!result) {
+		return true;
+	}
+	/*auto file = File(filenames[pos], "r");
+	file.*/
+	//string str = read(filenames[pos]);
+	main_game = new Game;
 
+	// Remove trailing ".json" then read.
+	main_game.read(Game.filenameToId(filenames[pos])); 
+	main_game.run();
 	return true;
 }
 
-void dualList(string[term_height] left_strs,
+// Return false if quitting.
+bool inGameMenu(Game game)
+{
+	int pos = 0;
+	bool result = centeredList(
+		["Return to Game", "Save Game and Quit", "Quit Game without Saving"],
+		pos);
+	if (pos == 1) {
+		game.write();
+		return false;
+	}
+	if (pos == 2) {
+		return false;
+	}
+	return true;
+}
+
+bool centeredList(string[] labels, ref int pos)
+{
+	return centeredList(labels, [], pos);
+}
+
+bool centeredList(string[] labels, bool delegate()[] callbacks)
+{
+	int dummy;
+	return centeredList(labels, callbacks, dummy);
+}
+
+bool centeredList(string[] labels, bool delegate()[] callbacks,
+	ref int pos)
+{
+	Key key = Key.none;
+	int longest_length = 0;
+	foreach (v; labels) {
+		longest_length = max(longest_length, v.length);
+	}
+	int labels_x = term_width/2-longest_length/2;
+	int labels_y = term_height/2-labels.length/2;
+	do {
+		term.clear();
+		foreach (int i, v; labels) {
+			term.write(labels_x, labels_y+i, v, i == pos);
+		}
+		key = term.readKey();
+		if (key == Key.digit_8) {
+			pos = umod(pos-1, cast(int)labels.length);
+		} else if (key == Key.digit_2) {
+			pos = umod(pos+1, cast(int)labels.length);
+		} else if (key == Key.enter) {
+			if (callbacks.length > pos) {
+				return callbacks[pos]();
+			}
+			return true;
+		}
+	} while (key != Key.escape);
+	return false;
+}
+
+void dualListNonblocking(string[term_height] left_strs,
 	string[term_height] right_strs,
 	Key key, ref int pos, ref bool is_right_side)
 {

@@ -13,15 +13,15 @@ class Map
 	mixin Serializable;
 	private Tile[] tiles;
 	private DList!Actor actors;
-	private Tile tmp;
+	@noser private Tile tmp;
 	private int _width, _height;
 	@property int width() { return _width; }
 	@property int height() { return _height; }
 
 	this(Serializer serializer)
 	{
-		this(serializer.load!(int)("_width"),
-			serializer.load!(int)("_height"));
+		this(serializer.load!int("_width"),
+			serializer.load!int("_height"));
 	}
 
 	this(int width, int height)
@@ -37,6 +37,17 @@ class Map
 		actors = DList!Actor();
 	}
 
+	void beforesave(Serializer serializer) {}
+	void beforeload(Serializer serializer) {}
+	void aftersave(Serializer serializer) {}
+	void afterload(Serializer serializer)
+	{
+		foreach (e; actors[]) {
+			e.map = this;
+			getTile(e.x, e.y).actor = e;
+		}
+	}
+
 	ref Tile getTile(int x, int y)
 	{
 		if (x < 0 || y < 0 || x >= _width || y >= _width) {
@@ -46,10 +57,16 @@ class Map
 		return tiles[x+y*_width];
 	}
 
-	void addActor(Actor actor, int x, int y)
+	void spawn(Actor actor, int x, int y)
 	{
+		actor.map = this;
 		actors.insertBack(actor);
 		actor.initPos(x, y);
+	}
+
+	void despawn(Actor actor)
+	{
+		actor.is_despawned = true;
 	}
 
 	bool update()

@@ -9,6 +9,10 @@ class Item
 	@property abstract string name();
 
 	this() {}
+	void beforesave(Serializer serializer) {}
+	void beforeload(Serializer serializer) {}
+	void aftersave(Serializer serializer) {}
+	void afterload(Serializer serializer) {}
 
 	void draw(int x, int y)
 	{

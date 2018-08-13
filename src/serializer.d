@@ -31,13 +31,9 @@ mixin template Serializable()
 		}
 	}
 
-	this(Serializer serializer)
-	{
-	}
-
 	static typeof(this) make(Serializer serializer)
 	{
-		import std.stdio; // XXX.
+		//import std.stdio; // XXX.
 		/*if (*serializer.stack[$-1]).isNull) {
 			return null;
 		}*/
@@ -52,6 +48,7 @@ mixin template Serializable()
 
 	void save(Serializer serializer)
 	{
+		beforesave(serializer);
 		serializer.save(type, "type");
 		foreach (v; __traits(allMembers, typeof(this))) {
 			static if (v != "Monitor"
@@ -61,24 +58,23 @@ mixin template Serializable()
 				serializer.save(__traits(getMember, this, v), v);
 			}
 		}
+		aftersave(serializer);
 	}
 
 	void load(Serializer serializer)
 	{
+		beforeload(serializer);
 		foreach (v; __traits(allMembers, typeof(this))) {
 			static if (v != "Monitor"
 			&& !hasUDA!(__traits(getMember, typeof(this), v), noser)
 			&& isMutable!(typeof(__traits(getMember, this, v)))
 			&& !isSomeFunction!(__traits(getMember, typeof(this), v))) {
-				/*__traits(getMember, this, v) =
-					serializer.load!(
-					typeof(__traits(getMember, this, v)))(v);*/
-				//writeln("q " ~ v);
 				alias MemberType = typeof(__traits(getMember, this, v));
 				__traits(getMember, this, v)
 					= serializer.load!(MemberType)(v);
 			}
 		}
+		afterload(serializer);
 	}
 }
 
@@ -137,8 +133,8 @@ class Serializer
 		} else static if (is(ValType == ElementType[], ElementType)) {
 			saveDynamicArray!(ValType, KeyType, ElementType)(val, key);
 			return;
-		} else static if (isScalarType!ValType) {
-			saveScalar(val, key);
+		} else static if (isNumeric!ValType) {
+			saveNumeric(val, key);
 			return;
 		} else static if (isBoolean!ValType) {
 			saveBoolean(val, key);
@@ -166,8 +162,8 @@ class Serializer
 			loadStaticArray!(ValType, KeyType, ElementType)(key);*/
 		} else static if (is(ValType == ElementType[], ElementType)) {
 			return loadDynamicArray!(ValType, KeyType, ElementType)(key);
-		} else static if (isIntegral!ValType) {
-			return loadScalar!(ValType)(key);
+		} else static if (isNumeric!ValType) {
+			return loadNumeric!(ValType)(key);
 		} else static if (isBoolean!ValType) {
 			return loadBoolean(key);
 		} else {
@@ -305,13 +301,11 @@ class Serializer
 	{
 		static if (isSomeString!ValType) {
 			return (*(stack[$-1]))[key].str;
-		}
-		static if (!isSomeString!ValType) {
+		} else static if (!isSomeString!ValType) {
 			++stack.length;
 			stack[$-1] = &((*stack[$-2])[key]);
 			//ValType val = ValType.make(this);
 			ValType val;
-			import std.stdio; // XXX.
 			val.length = (*stack[$-1]).array.length;
 			foreach (int i, v; (*stack[$-1]).array) {
 				val[i] = load!(ElementType)(i);
@@ -331,10 +325,20 @@ class Serializer
 		return cast(ValType)(*(stack[$-1]))[key].str;
 	}
 
-	alias saveScalar = saveString;
-	ValType loadScalar(ValType, KeyType)(KeyType key)
+	alias saveNumeric = saveString;
+	//void saveNumeric(ValType, KeyType)(ValType val, KeyType key)
+	//{
+		/*static if (isIntegral!ValType) {
+			static if (isUnsigned!ValType) {
+				(*(stack[$-1]))[key].uinteger = val;
+			} else static if (
+		} else static if (isFloatingPoint!ValType) {
+		}*/
+	//}
+
+	ValType loadNumeric(ValType, KeyType)(KeyType key)
 	{
-		static if (isIntegral!ValType) {
+		/*static if (isIntegral!ValType) {
 			static if (isUnsigned!ValType) {
 				return cast(ValType)((*(stack[$-1]))[key].uinteger);
 			} else static if (isSigned!ValType) {
@@ -342,6 +346,15 @@ class Serializer
 			}
 		} else static if (isFloatingPoint!ValType) {
 			return cast(ValType)((*stack[$-1]))[key].floating;
+		}*/
+		if ((*(stack[$-1]))[key].type == JSON_TYPE.UINTEGER) {
+			return cast(ValType)(*(stack[$-1]))[key].uinteger;
+		} else if ((*(stack[$-1]))[key].type == JSON_TYPE.INTEGER) {
+			return cast(ValType)(*(stack[$-1]))[key].integer;
+		} else if ((*(stack[$-1]))[key].type == JSON_TYPE.FLOAT) {
+			return cast(ValType)(*(stack[$-1]))[key].floating;
+		} else {
+			assert(false);
 		}
 	}
 
@@ -354,7 +367,7 @@ class Serializer
 		return false;
 	}
 
-	/*void saveScalar(ValType, KeyType)(ValType val, KeyType key)
+	/*void saveNumeric(ValType, KeyType)(ValType val, KeyType key)
 	{
 		(*(stack[$-1]))[key] = val;
 	}*/

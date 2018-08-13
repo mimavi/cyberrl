@@ -7,7 +7,7 @@ import serializer;
 import main;
 import menu;
 import item;
-import game;
+import map;
 
 // XXX: Perhaps this should be renamed to something clearer, i.e.
 // `ActorStatIndex`.
@@ -91,6 +91,10 @@ class ActorStats
 
 	this() {}
 	this(Serializer serializer) { this(); }
+	void beforesave(Serializer serializer) {}
+	void beforeload(Serializer serializer) {}
+	void aftersave(Serializer serializer) {}
+	void afterload(Serializer serializer) {}
 
 	string toString(ActorStat stat)
 	{
@@ -139,7 +143,8 @@ class ActorStats
 class Actor// : Saved
 {
 	mixin Serializable;
-	@noser Game game;
+	//@noser Game game;
+	@noser Map map;
 	ActorStats stats;
 	Array!Item items;
 	bool is_despawned = false;
@@ -159,6 +164,10 @@ class Actor// : Saved
 	}
 
 	this(Serializer serializer) { this(); }
+	void beforesave(Serializer serializer) {}
+	void beforeload(Serializer serializer) {}
+	void aftersave(Serializer serializer) {}
+	void afterload(Serializer serializer) {}
 
 	/*this(Serializer serializer)
 	{
@@ -172,14 +181,14 @@ class Actor// : Saved
 
 	void initPos(int x, int y)
 	{
-		game.map.getTile(x, y).actor = this;
+		map.getTile(x, y).actor = this;
 		_x = x;
 		_y = y;
 	}
 
 	void setPos(int x, int y)
 	{
-		game.map.getTile(_x, _y).actor = null;
+		map.getTile(_x, _y).actor = null;
 		initPos(x, y);
 	}
 
@@ -195,8 +204,8 @@ class Actor// : Saved
 			return false;
 		}
 
-		if (game.map.getTile(x, y).is_blocking
-		|| game.map.getTile(x, y).actor !is null) {
+		if (map.getTile(x, y).is_blocking
+		|| map.getTile(x, y).actor !is null) {
 			return false;
 		}
 		setPos(x, y);
@@ -205,12 +214,12 @@ class Actor// : Saved
 
 	bool actPickUp(int index)
 	{
-		if (index < 0 || index >= game.map.getTile(x, y).items.length) {
+		if (index < 0 || index >= map.getTile(x, y).items.length) {
 			return false;
 		}
-		auto item = game.map.getTile(x, y).items[index];
-		auto range = game.map.getTile(x, y).items[index..index+1];
-		game.map.getTile(x, y).items.linearRemove(range);
+		auto item = map.getTile(x, y).items[index];
+		auto range = map.getTile(x, y).items[index..index+1];
+		map.getTile(x, y).items.linearRemove(range);
 		items.insertBack(item);
 		return true;
 	}
@@ -223,7 +232,7 @@ class Actor// : Saved
 		auto item = items[index];
 		auto range = items[index..index+1];
 		items.linearRemove(range);
-		game.map.getTile(x, y).items.insertBack(item);
+		map.getTile(x, y).items.insertBack(item);
 		return true;
 	}
 }
@@ -262,7 +271,7 @@ class PlayerActor : Actor
 			main_game.draw();
 			auto key = term.readKey();
 			if (key == Key.escape) {
-				if (!menu.inGameMenu(game)) {
+				if (!menu.inGameMenu(main_game)) {
 					return false;
 				}
 			} else if (key >= Key.digit_1 && key <= Key.digit_9) {
@@ -270,7 +279,7 @@ class PlayerActor : Actor
 					actMoveTo(x+util.key_to_x[key], y+util.key_to_y[key]);
 			} else if (key == Key.g) {
 				int index;
-				if (menu.selectItem(game.map.getTile(x, y).items,
+				if (menu.selectItem(map.getTile(x, y).items,
 					"Select item to pick up:", index))
 				{
 					has_acted = actPickUp(index);

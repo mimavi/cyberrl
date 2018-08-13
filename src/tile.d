@@ -10,7 +10,7 @@ int a = 1; // XXX: What is this???
 class Tile
 {
 	mixin Serializable;
-	Actor actor;
+	@noser Actor actor;
 	Array!Item items;
 	@property abstract Symbol symbol();
 	@property abstract bool is_blocking();
@@ -20,6 +20,10 @@ class Tile
 		items = Array!Item();
 	}
 	this(Serializer) { this(); }
+	void beforesave(Serializer serializer) {}
+	void beforeload(Serializer serializer) {}
+	void aftersave(Serializer serializer) {}
+	void afterload(Serializer serializer) {}
 
 	void draw(int x, int y) {
 		if (actor is null) {
