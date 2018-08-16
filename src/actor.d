@@ -53,16 +53,16 @@ enum ActorStat
 	knowledges_max = computers,
 }
 
-class ActorStats
+struct ActorStats
 {
 	mixin Serializable;
-	immutable int attribute_min = -5;
-	immutable int attribute_max = 5;
-	immutable int skill_min = 0;
-	immutable int skill_max = 5;
-	immutable int knowledge_min = 0;
-	immutable int knowledge_max = 5;
-	immutable string [ActorStat.max+1] names = [
+	enum attribute_min = -5;
+	enum attribute_max = 5;
+	enum skill_min = 0;
+	enum skill_max = 5;
+	enum knowledge_min = 0;
+	enum knowledge_max = 5;
+	enum names = [
 		ActorStat.strength: "strength",
 		ActorStat.dexterity: "dexterity",
 		ActorStat.agility: "agility",
@@ -86,11 +86,10 @@ class ActorStats
 		ActorStat.electromagnetism: "electromagnetism",
 		ActorStat.computers: "computers",
 	];
-	@noser int[ActorStat.max+1] stats;
+	int[ActorStat.max+1] stats;
 	alias stats this;
 
-	this() {}
-	this(Serializer serializer) { this(); }
+	this(Serializer serializer) {}
 	void beforesave(Serializer serializer) {}
 	void beforeload(Serializer serializer) {}
 	void aftersave(Serializer serializer) {}
@@ -159,7 +158,7 @@ class Actor// : Saved
 
 	this()
 	{
-		stats = new ActorStats;
+		stats = ActorStats();
 		items = Array!Item();
 	}
 

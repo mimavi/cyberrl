@@ -99,3 +99,12 @@ Signed!T1 umod(T1, T2)(T1 dividend, T2 divisor)
 	}
 	return signed_modulo;
 }
+
+template hasAddress(alias T)
+{
+	static if (__traits(compiles, (ref typeof(T) x) {} (T))) {
+		enum hasAddress = true;
+	} else {
+		enum hasAddress = false;
+	}
+}

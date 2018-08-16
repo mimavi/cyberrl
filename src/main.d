@@ -6,6 +6,7 @@ import game;
 
 Game main_game;
 
+
 void main()
 {
 	try {

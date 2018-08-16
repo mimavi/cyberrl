@@ -15,18 +15,25 @@ enum noser;
 
 mixin template Serializable()
 {
-	import std.meta;
 	import std.traits;
-	immutable bool is_serializable = true;
+	//immutable bool is_serializable = true;
+	enum is_serializable = true;
 	@noser static typeof(this) function(Serializer)[string] submakes;
 	@property string type() { return typeof(this).stringof; }
 
 	static this() // XXX.
 	{
-		static if (!isAbstractClass!(typeof(this))) {
+		static if (is(typeof(this) == class)) {
+			static if (!isAbstractClass!(typeof(this))) {
+				submakes[typeof(this).stringof] =
+					function typeof(this)(Serializer serializer) {
+						return new typeof(this)(serializer);
+					};
+			}
+		} else static if (is(typeof(this) == struct)) {
 			submakes[typeof(this).stringof] =
 				function typeof(this)(Serializer serializer) {
-					return new typeof(this)(serializer);
+					return typeof(this)(serializer);
 				};
 		}
 	}
@@ -38,9 +45,23 @@ mixin template Serializable()
 			return null;
 		}*/
 		string type = serializer.load!(string, string)("type");
-		static if (!isAbstractClass!(typeof(this))) {
+		/*static if (is(typeof(this) == class)) {
+			if (type is null) {
+				
+			}
+		} else static if (!isAbstractClass!(typeof(this))) {
 			if (type is null) {
 				return new typeof(this)(serializer);
+			}
+		}*/
+		if (type is null) {
+			static if (is(typeof(this) == class)
+			&& !isAbstractClass!(typeof(this))) {
+				return new typeof(this)(serializer);
+			} else static if (is(typeof(this) == struct)) {
+
+			} else {
+				assert(false);
 			}
 		}
 		return submakes[type](serializer);
@@ -50,12 +71,13 @@ mixin template Serializable()
 	{
 		beforesave(serializer);
 		serializer.save(type, "type");
-		foreach (v; __traits(allMembers, typeof(this))) {
-			static if (v != "Monitor"
-			&& !hasUDA!(__traits(getMember, typeof(this), v), noser)
-			&& isMutable!(typeof(__traits(getMember, this, v)))
-			&& !isSomeFunction!(__traits(getMember, typeof(this), v))) {
-				serializer.save(__traits(getMember, this, v), v);
+		foreach (e; __traits(allMembers, typeof(this))) {
+			static if (e != "Monitor"
+			&& !hasUDA!(__traits(getMember, typeof(this), e), noser)
+			&& isMutable!(typeof(__traits(getMember, this, e)))
+			&& !isSomeFunction!(__traits(getMember, typeof(this), e))
+			&& hasAddress!(__traits(getMember, this, e))) {
+				serializer.save(__traits(getMember, this, e), e);
 			}
 		}
 		aftersave(serializer);
@@ -64,14 +86,15 @@ mixin template Serializable()
 	void load(Serializer serializer)
 	{
 		beforeload(serializer);
-		foreach (v; __traits(allMembers, typeof(this))) {
-			static if (v != "Monitor"
-			&& !hasUDA!(__traits(getMember, typeof(this), v), noser)
-			&& isMutable!(typeof(__traits(getMember, this, v)))
-			&& !isSomeFunction!(__traits(getMember, typeof(this), v))) {
-				alias MemberType = typeof(__traits(getMember, this, v));
-				__traits(getMember, this, v)
-					= serializer.load!(MemberType)(v);
+		foreach (e; __traits(allMembers, typeof(this))) {
+			static if (e != "Monitor"
+			&& !hasUDA!(__traits(getMember, typeof(this), e), noser)
+			&& isMutable!(typeof(__traits(getMember, this, e)))
+			&& !isSomeFunction!(__traits(getMember, typeof(this), e))
+			&& hasAddress!(__traits(getMember, this, e))) {
+				alias MemberType = typeof(__traits(getMember, this, e));
+				__traits(getMember, this, e)
+					= serializer.load!(MemberType)(e);
 			}
 		}
 		afterload(serializer);
@@ -80,15 +103,20 @@ mixin template Serializable()
 
 mixin template InheritedSerializable()
 {
-	//string type = typeof(this).stringof;
-	//@property string type() { return typeof(this).stringof; }
+	import std.traits;
 	@property override string type() { return typeof(this).stringof; }
 	static this()
 	{
-		submakes[typeof(this).stringof] =
+		/*submakes[typeof(this).stringof] =
 			function typeof(this)(Serializer serializer) {
 				return new typeof(this)(serializer);
-			};
+			};*/
+		static if (!isAbstractClass!(typeof(this))) {
+			submakes[typeof(this).stringof] =
+				function typeof(this)(Serializer serializer) {
+					return new typeof(this)(serializer);
+				};
+		}
 	}
 }
 
@@ -126,9 +154,8 @@ class Serializer
 			saveString(val, key);
 			return;
 		} else static if (isStaticArray!ValType) {
-			/*alias ElementType = typeof(ValType.init.front.init);
-			saveStaticArray!(ValType, KeyType, ElementType)(val, key);*/
-			return;
+			alias ElementType = typeof(ValType.init.front.init);
+			saveStaticArray!(ValType, KeyType, ElementType)(val, key);
 		// Dynamic array.
 		} else static if (is(ValType == ElementType[], ElementType)) {
 			saveDynamicArray!(ValType, KeyType, ElementType)(val, key);
@@ -140,7 +167,8 @@ class Serializer
 			saveBoolean(val, key);
 			return;
 		} else {
-			pragma(msg, "Error: save() does not handle "~ValType.stringof~".");
+			pragma(msg,
+				"Error: save() does not handle "~ValType.stringof~".");
 			static assert(false);
 		}
 	}
@@ -158,8 +186,8 @@ class Serializer
 		} else static if (isSomeString!ValType) {
 			return loadString!(ValType)(key);
 		} else static if (isStaticArray!ValType) {
-			/*alias ElementType = typeof(ValType.init.front.init);
-			loadStaticArray!(ValType, KeyType, ElementType)(key);*/
+			alias ElementType = typeof(ValType.init.front.init);
+			return loadStaticArray!(ValType, KeyType, ElementType)(key);
 		} else static if (is(ValType == ElementType[], ElementType)) {
 			return loadDynamicArray!(ValType, KeyType, ElementType)(key);
 		} else static if (isNumeric!ValType) {
@@ -174,8 +202,10 @@ class Serializer
 
 	void saveSerializable(ValType, KeyType)(ValType val, KeyType key)
 	{
-		if (val is null)
-			return;
+		static if (is(ValType == class)) {
+			if (val is null)
+				return;
+		}
 		++stack.length;
 		//*(stack[$-1]) = JSONValue((JSONValue[string]).init);
 		(*stack[$-2])[key] = JSONValue((JSONValue[string]).init);
@@ -188,7 +218,13 @@ class Serializer
 	{
 		static if (isSomeString!KeyType) {
 			if ((key in (*stack[$-1])) is null) {
-				return null;
+				static if (is(ValType == class)) {
+					return null;
+				} else static if (is(ValType == struct)) {
+					return ValType.make(this);
+				} else {
+					static assert(false);
+				}
 			}
 		}
 		static if (isIntegral!KeyType) {
@@ -274,17 +310,30 @@ class Serializer
 		(*stack[$-1])[key] = JSONValue((JSONValue[]).init);
 		(*stack[$-1])[key].array.length = val.length;
 		++stack.length;
+		stack[$-1] = &((*stack[$-2])[key]);
 		foreach (int i, v; val) {
 			save(v, i);
 		}
 		--stack.length;
 	}
 
-	void loadStaticArray(ValType, KeyType, ElementType)(KeyType key)
+	ValType loadStaticArray(ValType, KeyType, ElementType)(KeyType key)
 	{
+		static if (isSomeString!ValType) {
+			return (*(stack[$-1]))[key].str;
+		} else {
+			++stack.length;
+			stack[$-1] = &((*stack[$-2])[key]);
+			ValType val;
+			foreach (int i, e; (*stack[$-1]).array) {
+				val[i] = load!(ElementType)(i);
+			}
+			--stack.length;
+			return val;
+		}
 	}
 
-	void saveDynamicArray(ValType, KeyType, ElementType)
+	/*void saveDynamicArray(ValType, KeyType, ElementType)
 		(ValType val, KeyType key)
 	{
 		(*stack[$-1])[key] = JSONValue((JSONValue[]).init);
@@ -295,13 +344,14 @@ class Serializer
 			save(v, i);
 		}
 		--stack.length;
-	}
+	}*/
+	alias saveDynamicArray = saveStaticArray;
 
 	ValType loadDynamicArray(ValType, KeyType, ElementType)(KeyType key)
 	{
 		static if (isSomeString!ValType) {
 			return (*(stack[$-1]))[key].str;
-		} else static if (!isSomeString!ValType) {
+		} else {
 			++stack.length;
 			stack[$-1] = &((*stack[$-2])[key]);
 			//ValType val = ValType.make(this);

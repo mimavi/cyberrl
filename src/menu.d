@@ -98,12 +98,14 @@ bool newGameMenu()
 
 	do {
 		if (key == Key.digit_4) {
+			writeln("a");
 			ActorStat stat = is_right_side?
 				right_stats[pos] : left_stats[pos];
 			newGameMenuDecrementStat(main_game.player.stats, stat,
 				attribute_points_num, skill_points_num,
 				knowledge_points_num);
 		} else if (key == Key.digit_6) {
+			writeln("b");
 			ActorStat stat = is_right_side?
 				right_stats[pos] : left_stats[pos];
 			newGameMenuIncrementStat(main_game.player.stats, stat,
@@ -115,7 +117,7 @@ bool newGameMenu()
 			}
 		} else if (key == Key.backspace) {
 			if (name.length > 0) {
-				name = name[0 .. $-1];
+				name = name[0..$-1];
 			}
 		}
 		drawNewGameMenu(name, main_game.player.stats, pos,
@@ -174,7 +176,7 @@ void drawNewGameMenu(string name, ActorStats stats, int pos,
 	term.write(dual_list_right_x, 14, " Knowledge:", Color.cyan);
 }
 
-void newGameMenuIncrementStat(ActorStats stats, ActorStat stat,
+void newGameMenuIncrementStat(ref ActorStats stats, ActorStat stat,
 	ref int attribute_points_num,
 	ref int skill_points_num,
 	ref int knowledge_points_num)
@@ -244,9 +246,6 @@ bool loadGameMenu()
 	if (!result) {
 		return true;
 	}
-	/*auto file = File(filenames[pos], "r");
-	file.*/
-	//string str = read(filenames[pos]);
 	main_game = new Game;
 
 	// Remove trailing ".json" then read.
@@ -262,6 +261,9 @@ bool inGameMenu(Game game)
 	bool result = centeredList(
 		["Return to Game", "Save Game and Quit", "Quit Game without Saving"],
 		pos);
+	if (!result) {
+		return true;
+	}
 	if (pos == 1) {
 		game.write();
 		return false;

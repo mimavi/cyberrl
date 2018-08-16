@@ -5,8 +5,6 @@ import actor;
 import item;
 import std.container;
 
-int a = 1; // XXX: What is this???
-
 class Tile
 {
 	mixin Serializable;
