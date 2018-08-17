@@ -1,5 +1,6 @@
 import std.algorithm.comparison;
 import std.container;
+import std.random;
 import std.math;
 import util;
 import term;
@@ -86,7 +87,7 @@ struct ActorStats
 		ActorStat.electromagnetism: "electromagnetism",
 		ActorStat.computers: "computers",
 	];
-	int[ActorStat.max+1] stats;
+	int[ActorStat.max+1] stats; // All 0 by default.
 	alias stats this;
 
 	this(Serializer serializer) {}
@@ -142,16 +143,29 @@ struct ActorStats
 class Actor// : Saved
 {
 	mixin Serializable;
-	//@noser Game game;
+
+	enum base_ap_per_turn = 10;
+	enum base_ap_cost = 100;
+	enum agility_ap_weight = 10;
+	enum dexterity_ap_weight = 10;
+	enum ap_action_threshold = 100;
+
 	@noser Map map;
 	ActorStats stats;
 	Array!Item items;
 	bool is_despawned = false;
+
+	private int ap = 0;
 	private int _x, _y;
 
-	// Return false if Map.update() should return.
-	abstract bool update();
+	abstract bool subupdate(); // Return false if `Map.update()` shall return.
 	@property abstract Symbol symbol();
+
+	// "ap" means "action points". "eff" means "effective".
+	@property int quickness() { return 0; }
+	@property int eff_quickness()
+		{ return quickness + stats[ActorStat.reflex]; }
+	@property int ap_per_turn() { return base_ap_per_turn + eff_quickness; }
 
 	@property int x() { return _x; }
 	@property int y() { return _y; }
@@ -168,10 +182,16 @@ class Actor// : Saved
 	void aftersave(Serializer serializer) {}
 	void afterload(Serializer serializer) {}
 
-	/*this(Serializer serializer)
+	// Return false if `Map.update()` shall return.
+	bool update()
 	{
-		load(serializer);
-	}*/
+		ap += ap_per_turn;
+		if (ap >= ap_action_threshold) {
+			ap -= ap_action_threshold;
+			return subupdate();
+		}
+		return true;
+	}
 
 	void draw(int x, int y)
 	{
@@ -196,18 +216,26 @@ class Actor// : Saved
 	// No matter what input they get, they MUST NOT throw any exception,
 	// error or cause any crashing or freezing.
 
+	bool actWait()
+	{
+		return true;
+	}
+
 	bool actMoveTo(int x, int y)
 	{
 		// Must be an adjacent tile.
 		if (abs(x-_x) > 1 || abs(y-_y) > 1) {
 			return false;
 		}
-
+		// XXX: If `map` is null, then an exception is thrown.
+		// How is that """save"""?
 		if (map.getTile(x, y).is_blocking
 		|| map.getTile(x, y).actor !is null) {
 			return false;
 		}
 		setPos(x, y);
+
+		ap -= base_ap_cost - agility_ap_weight*stats[ActorStat.agility];
 		return true;
 	}
 
@@ -220,6 +248,8 @@ class Actor// : Saved
 		auto range = map.getTile(x, y).items[index..index+1];
 		map.getTile(x, y).items.linearRemove(range);
 		items.insertBack(item);
+		
+		ap -= base_ap_cost - dexterity_ap_weight*stats[ActorStat.dexterity];
 		return true;
 	}
 
@@ -232,6 +262,8 @@ class Actor// : Saved
 		auto range = items[index..index+1];
 		items.linearRemove(range);
 		map.getTile(x, y).items.insertBack(item);
+
+		ap -= base_ap_cost - dexterity_ap_weight*stats[ActorStat.dexterity];
 		return true;
 	}
 }
@@ -239,23 +271,12 @@ class Actor// : Saved
 class PlayerActor : Actor
 {
 	mixin InheritedSerializable;
-	override @property Symbol symbol()
-	{
-		return Symbol('@', Color.white, Color.black, true);
-	}
+
+	@property override Symbol symbol()
+		{ return Symbol('@', Color.white, Color.black, true); }
 
 	this() {}
 	this(Serializer serializer) { this(); }
-
-	/*this(Serializer serializer)
-	{
-		load(serializer);
-	}*/
-
-	/*static PlayerActor make(Serializer serializer)
-	{
-		return new PlayerActor(serializer);
-	}*/
 
 	override void initPos(int x, int y)
 	{
@@ -263,7 +284,7 @@ class PlayerActor : Actor
 		main_game.centerizeCamera(x, y);
 	}
 
-	override bool update()
+	override bool subupdate()
 	{
 		bool has_acted = false;
 		do {
@@ -279,33 +300,54 @@ class PlayerActor : Actor
 			} else if (key == Key.g) {
 				int index;
 				if (menu.selectItem(map.getTile(x, y).items,
-					"Select item to pick up:", index))
-				{
+					"Select item to pick up:", index)) {
 					has_acted = actPickUp(index);
 				}
 			} else if (key == Key.d) {
 				int index;
 				if (menu.selectItem(items,
-					"Select item to drop:", index))
-				{
+					"Select item to drop:", index)) {
 					has_acted = actDrop(index);
 				}
+			} else if (key == Key.period) {
+				has_acted = actWait();
 			}
-		} while(!has_acted);
-		
+		} while (!has_acted);
 		return true;
 	}
 }
 
 class AiActor : Actor
 {
-	/*this(Serializer serializer)
-	{
-		load(serializer);
-	}*/
+	mixin InheritedSerializable;
 
-	override bool update()
+	enum max_action_attempts_num = 100;
+
+	override bool subupdate()
 	{
+		aiMeander();
 		return true;
 	}
+
+	void aiMeander()
+	{
+		bool has_acted = false;
+		// TODO: Timeout when too many attempts fail.
+		for (int i = 0; !has_acted && i < max_action_attempts_num; ++i) {
+			has_acted
+				= actMoveTo(x+1-uniform(0, 3, rng), y+1-uniform(0, 3, rng));
+		}
+	}
+}
+
+class LightsamuraiAiActor : AiActor
+{
+	mixin InheritedSerializable;
+
+	this() {}
+	this(Serializer serializer) {}
+
+	@property override Symbol symbol()
+		{ return Symbol('@', Color.magenta, true); }
+
 }

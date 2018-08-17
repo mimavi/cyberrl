@@ -23,7 +23,8 @@ class Item
 class LightkatanaItem : Item
 {
 	mixin InheritedSerializable;
-	@property override Symbol symbol() { return Symbol('/', Color.cyan); }
+	@property override Symbol symbol()
+		{ return Symbol('/', Color.magenta, true); }
 	@property override string name() { return "lightkatana"; }
 
 	this() {}

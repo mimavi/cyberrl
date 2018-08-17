@@ -98,14 +98,12 @@ bool newGameMenu()
 
 	do {
 		if (key == Key.digit_4) {
-			writeln("a");
 			ActorStat stat = is_right_side?
 				right_stats[pos] : left_stats[pos];
 			newGameMenuDecrementStat(main_game.player.stats, stat,
 				attribute_points_num, skill_points_num,
 				knowledge_points_num);
 		} else if (key == Key.digit_6) {
-			writeln("b");
 			ActorStat stat = is_right_side?
 				right_stats[pos] : left_stats[pos];
 			newGameMenuIncrementStat(main_game.player.stats, stat,
@@ -135,6 +133,7 @@ bool newGameMenu()
 
 	if (key == Key.enter) {
 		main_game.map.spawn(main_game.player, 10, 10);
+		main_game.map.spawn(new LightsamuraiAiActor, 20, 10);
 		auto rng = Random(
 			cast(uint) Clock.currTime().fracSecs().total!"hnsecs");
 		foreach (i; 1..10000) {
@@ -206,7 +205,7 @@ void newGameMenuIncrementStat(ref ActorStats stats, ActorStat stat,
 	}
 }
 
-void newGameMenuDecrementStat(ActorStats stats, ActorStat stat,
+void newGameMenuDecrementStat(ref ActorStats stats, ActorStat stat,
 	ref int attribute_points_num,
 	ref int skill_points_num,
 	ref int knowledge_points_num)

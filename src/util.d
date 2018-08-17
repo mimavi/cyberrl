@@ -1,4 +1,6 @@
 import std.container;
+import std.datetime;
+import std.random;
 import std.traits;
 import std.array;
 import std.stdio;
@@ -64,6 +66,7 @@ char[chr_to_index.length] index_to_chr = [
 
 immutable string[int] val_to_minus_5_to_5_adjective;
 immutable string[int] val_to_0_to_5_adjective;
+Random rng;
 
 static this()
 {
@@ -88,6 +91,8 @@ static this()
 		4: "excellent in",
 		5: "master in",
 	];
+
+	rng = Random(cast(uint)Clock.currTime().fracSecs().total!"hnsecs");
 }
 
 // TODO: Add unittests for this function.
