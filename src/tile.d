@@ -39,24 +39,30 @@ class Tile
 class FloorTile : Tile
 {
 	mixin InheritedSerializable;
-	this() { super(); }
-	this(Serializer serializer) { super(serializer); }
 	@property override Symbol symbol()
 	{
 		return Symbol('.', Color.white, Color.black, false);
 	}
 	@property override bool is_blocking() { return false; }
+	this() { super(); }
+	this(Serializer serializer) { super(serializer); }
 }
 
 class WallTile : Tile
 {
 	mixin InheritedSerializable;
+	@property override Symbol symbol()
+		{ return Symbol('#', Color.white, Color.black, false); }
+	@property override bool is_blocking() { return true; }
 	this() { super(); }
 	this(Serializer serializer) { super(serializer); }
-	override @property Symbol symbol()
-	{
-		return Symbol('#', Color.white, Color.black, false);
-	}
-	override @property bool is_blocking() { return true; }
 }
 
+class MarkerFloorTile : FloorTile
+{
+	mixin InheritedSerializable;
+	Symbol _symbol;
+	@property override Symbol symbol() { return _symbol; }
+	this(Color color) { super(); _symbol = Symbol('.', color, true); }
+	this(Serializer serializer) { super(serializer); }
+}

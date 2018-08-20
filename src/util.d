@@ -7,19 +7,32 @@ import std.stdio;
 import std.json;
 import term;
 
-byte[Key.max+1] key_to_x = [
+// XXX: Use enums instead?
+// TODO: Make it an array of points instead.
+immutable int[Key.max+1] key_to_x = [
 	Key.digit_1: -1, Key.digit_2: 0, Key.digit_3: 1,
 	Key.digit_4: -1, Key.digit_5: 0, Key.digit_6: 1,
 	Key.digit_7: -1, Key.digit_8: 0, Key.digit_9: 1,
 ];
-
-byte[Key.max+1] key_to_y = [
+immutable int[Key.max+1] key_to_y = [
 	Key.digit_1: 1, Key.digit_2: 1, Key.digit_3: 1,
 	Key.digit_4: 0, Key.digit_5: 0, Key.digit_6: 0,
 	Key.digit_7: -1, Key.digit_8: -1, Key.digit_9: -1,
 ];
 
-char[Key.max+1] key_to_chr = [
+immutable Point[Dir.max+1] dir_to_point = [
+	Dir.down_left: Point(-1, 1),
+	Dir.down: Point(0, 1),
+	Dir.down_right: Point(1, 1),
+	Dir.left: Point(-1, 0),
+	Dir.center: Point(0, 0),
+	Dir.right: Point(1, 0),
+	Dir.up_left: Point(-1, -1),
+	Dir.up: Point(0, -1),
+	Dir.up_right: Point(1, -1),
+];
+
+immutable char[Key.max+1] key_to_chr = [
 	Key.digit_0: '0', 
 	Key.digit_1: '1', Key.digit_2: '2', Key.digit_3: '3',
 	Key.digit_4: '4', Key.digit_5: '5', Key.digit_6: '6',
@@ -38,7 +51,7 @@ char[Key.max+1] key_to_chr = [
 	Key.Z: 'Z',
 ];
 
-int[255] chr_to_index = [
+immutable int[255] chr_to_index = [
 	'a': 0,  'b': 1,  'c': 2,  'd': 3,  'e': 4,  'f': 5,  'g': 6,  'h': 7,
 	'i': 8,  'j': 9,  'k': 10, 'l': 11, 'm': 12, 'n': 13, 'o': 14, 'p': 15,
 	'q': 16, 'r': 17, 's': 18, 't': 19, 'u': 20, 'v': 21, 'w': 22, 'x': 23,
@@ -51,7 +64,7 @@ int[255] chr_to_index = [
 	'8': 60, '9': 61
 ];
 
-char[chr_to_index.length] index_to_chr = [
+immutable char[chr_to_index.length] index_to_chr = [
 	0:  'a', 1:  'b', 2:  'c', 3:  'd', 4:  'e', 5:  'f', 6:  'g', 7:  'h',
 	8:  'i', 9:  'j', 10: 'k', 11: 'l', 12: 'm', 13: 'n', 14: 'o', 15: 'p',
 	16: 'q', 17: 'r', 18: 's', 19: 't', 20: 'u', 21: 'v', 22: 'w', 23: 'x',
@@ -67,6 +80,35 @@ char[chr_to_index.length] index_to_chr = [
 immutable string[int] val_to_minus_5_to_5_adjective;
 immutable string[int] val_to_0_to_5_adjective;
 Random rng;
+
+enum Dir
+{
+	down_left,
+	down,
+	down_right,
+	left,
+	center,
+	right,
+	up_left,
+	up,
+	up_right,
+}
+
+struct Point
+{
+	int x, y;
+	this(int x, int y) { this.x = x; this.y = y; }
+}
+
+template hasAddress(alias T)
+{
+	// HACK?
+	static if (__traits(compiles, (ref typeof(T) x) {} (T))) {
+		enum hasAddress = true;
+	} else {
+		enum hasAddress = false;
+	}
+}
 
 static this()
 {
@@ -103,13 +145,4 @@ Signed!T1 umod(T1, T2)(T1 dividend, T2 divisor)
 		return divisor+signed_modulo;
 	}
 	return signed_modulo;
-}
-
-template hasAddress(alias T)
-{
-	static if (__traits(compiles, (ref typeof(T) x) {} (T))) {
-		enum hasAddress = true;
-	} else {
-		enum hasAddress = false;
-	}
 }

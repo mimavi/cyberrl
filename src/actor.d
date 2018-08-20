@@ -313,6 +313,12 @@ class PlayerActor : Actor
 				has_acted = actWait();
 			}
 		} while (!has_acted);
+		import tile; import map; Point[] path = this.map.findPath(x, y, 20, 20); // XXX.
+		Color color = cast(Color)uniform(0, Color.max+1, rng); // XXX.
+		foreach (e; path) { // XXX.
+			this.map.getTile(e.x, e.y) =
+				new MarkerFloorTile(color); // XXX.
+		} // XXX.
 		return true;
 	}
 }
@@ -337,6 +343,11 @@ class AiActor : Actor
 			has_acted
 				= actMoveTo(x+1-uniform(0, 3, rng), y+1-uniform(0, 3, rng));
 		}
+	}
+
+	void aiFollow()
+	{
+		bool has_acted = false;
 	}
 }
 

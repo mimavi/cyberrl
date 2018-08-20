@@ -47,6 +47,7 @@ class Game
 	}
 
 	// Will throw exception if `this.id == 0`.
+	// TODO: Trivial task: make this function use `idToFilename` function.
 	void read()
 	{
 		Serializer serializer = new Serializer;
@@ -72,17 +73,6 @@ class Game
 		auto file = File(idToFilename(id), "w");
 		file.write(serializer.str);
 	}
-
-	/*void spawn(Actor actor, int x, int y)
-	{
-		actor.game = this;
-		map.addActor(actor, x, y);
-	}
-
-	void despawn(Actor actor)
-	{
-		actor.is_despawned = true;
-	}*/
 
 	void run()
 	{ 
