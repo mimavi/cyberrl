@@ -3,12 +3,13 @@ import std.container;
 import std.random;
 import std.math;
 import util;
-import term;
 import serializer;
+import term;
 import main;
 import menu;
-import item;
 import map;
+import tile;
+import item;
 
 // XXX: Perhaps this should be renamed to something clearer, i.e.
 // `ActorStatIndex`.
@@ -140,7 +141,7 @@ struct ActorStats
 	}
 }
 
-class Actor// : Saved
+class Actor
 {
 	mixin Serializable;
 
@@ -193,7 +194,7 @@ class Actor// : Saved
 		return true;
 	}
 
-	void draw(int x, int y)
+	final void draw(int x, int y)
 	{
 		term.setSymbol(x, y, symbol);
 	}
@@ -286,7 +287,24 @@ class PlayerActor : Actor
 
 	override bool subupdate()
 	{
+		void fovCallback(int tile_x, int tile_y, Tile tile)
+		{
+			//tile.draw(x, y);
+			//tile.is_visibles = true;
+			//tile.is_discovered = true;
+			tile.is_visible = true;
+			map.visibles.insertBack(Point(tile_x, tile_y));
+		}
+
+		foreach (e; map.visibles[]) {
+			map.getTile(e).is_visible = false;
+		}
+
+		map.visibles.length = 0;
+		map.fov(x, y, int.max, &fovCallback);
+
 		bool has_acted = false;
+
 		do {
 			main_game.draw();
 			auto key = term.readKey();
@@ -313,12 +331,6 @@ class PlayerActor : Actor
 				has_acted = actWait();
 			}
 		} while (!has_acted);
-		import tile; import map; Point[] path = this.map.findPath(x, y, 20, 20); // XXX.
-		Color color = cast(Color)uniform(0, Color.max+1, rng); // XXX.
-		foreach (e; path) { // XXX.
-			this.map.getTile(e.x, e.y) =
-				new MarkerFloorTile(color); // XXX.
-		} // XXX.
 		return true;
 	}
 }
@@ -326,7 +338,6 @@ class PlayerActor : Actor
 class AiActor : Actor
 {
 	mixin InheritedSerializable;
-
 	enum max_action_attempts_num = 100;
 
 	override bool subupdate()
@@ -345,9 +356,16 @@ class AiActor : Actor
 		}
 	}
 
-	void aiFollow()
+	/*void aiFollow()
 	{
 		bool has_acted = false;
+		//Point[] path = this.map.findPath(x, y,
+			//this.map.game.player.x, this.map.game.player.y);
+		//Point[] path = map.findPath(x, y, x, y);
+	}*/
+
+	void aiWander()
+	{
 	}
 }
 

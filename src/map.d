@@ -12,15 +12,17 @@ import actor;
 import item;
 
 // TODO: Rename `blocking` to `!passable` in movement context.
-// It's more clear.
+// It's clearer.
 
 class Map
 {
 	mixin Serializable;
+	Array!Point visibles;
 	private Tile[] tiles;
 	private DList!Actor actors;
 	@noser private Tile tmp;
 	private int _width, _height;
+
 	@property int width() { return _width; }
 	@property int height() { return _height; }
 
@@ -40,7 +42,7 @@ class Map
 				getTile(x, y) = new FloorTile;
 			}
 		}
-		actors = DList!Actor();
+		//actors = DList!Actor(); // XXX: Umm, pointless?
 	}
 
 	void beforesave(Serializer serializer) {}
@@ -54,7 +56,6 @@ class Map
 		}
 	}
 
-	// XXX: Why `ref`?
 	ref Tile getTile(int x, int y)
 	{
 		if (x < 0 || y < 0 || x >= _width || y >= _width) {
@@ -63,6 +64,7 @@ class Map
 		}
 		return tiles[x+y*_width];
 	}
+	ref Tile getTile(Point point) { return getTile(point.x, point.y); }
 
 	void spawn(Actor actor, int x, int y)
 	{
@@ -95,7 +97,7 @@ class Map
 	{
 		term.clear();
 
-		void drawCallback(int tile_x, int tile_y, Tile tile)
+		/*void drawCallback(int tile_x, int tile_y, Tile tile)
 		{
 			int x = tile_x-src_x+dest_x;
 			int y = tile_y-src_y+dest_y;
@@ -103,11 +105,18 @@ class Map
 			if (x >= dest_x && y >= dest_y &&
 				x < dest_x+width && y < dest_y+height)
 			{
-				tile.draw(x, y);
+				//tile.draw(x, y);
+				tile.is_visibles = true;
+				tile.is_discovered = true;
+			}
+		}*/
+
+		//fov(src_x+width/2, src_y+height/2, 11, &drawCallback);
+		for (int i = 0; i < width; ++i) {
+			for (int ii = 0; ii < height; ++ii) {
+				getTile(src_x+i, src_y+ii).draw(i, ii);
 			}
 		}
-
-		fov(src_x+width/2, src_y+height/2, 11, &drawCallback);
 	}
 
 	void fov(int center_x, int center_y, int range,
@@ -125,6 +134,7 @@ class Map
 		callback(center_x, center_y, getTile(center_x, center_y));
 	}
 
+	// XXX: Is the existence of `range` necessary?
 	void fovScan(int center_x, int center_y, int dir_c, int dir_r,
 		int row, int range, bool vert,
 		void delegate(int, int, Tile) callback,
@@ -159,12 +169,9 @@ class Map
 
 	// TODO: Take movement speed dependency on tile type into consideration.
 	Point[] findPath(int source_x, int source_y, int target_x, int target_y,
-		bool delegate(int, int) get_is_passable =
-			toDelegate(&findPathGetIsPassable),
-		Point[8] delegate(int, int) get_next_coords =
-			toDelegate(&findPathGetNextCoords))
+		bool delegate(int, int) get_is_passable,
+		Point[8] delegate(int, int) get_next_coords)
 	{
-		import std.conv; import std.stdio; writeln("source: "~to!string(source_x)~" "~to!string(source_y));
 		Point[] stack = [Point(source_x, source_y)];
 		int cur_x = source_x, cur_y = source_y;
 		//bool[tiles.length] was_visited; // All false by default.
@@ -176,10 +183,14 @@ class Map
 		//foreach (e; stack) {
 		for (int i = 0; i < stack.length; ++i) {
 			auto e = stack[i];
-			foreach (ee; findPathGetNextCoords(e.x, e.y)) {
+			foreach (ee; get_next_coords(e.x, e.y)) {
 				// Target tile need not be passable
 				// to be reachable in this routine.
 				if (ee.x == target_x && ee.y == target_y) {
+					if (!get_is_passable(ee.x, ee.y)) {
+						return [];
+					}
+
 					Point[] result = [Point(source_x, source_y)];
 					result.length = steps[e.x+e.y*width]+1;
 					result[$-1] = Point(target_x, target_y);
@@ -189,11 +200,10 @@ class Map
 					cur = links[cur.x+cur.y*width], ++ii) {
 						result[$-2-ii] = cur;
 					}
-					import std.stdio; writeln(result); // XXX.
 					return result;
 				}
 
-				if (findPathGetIsPassable(ee.x, ee.y)
+				if (get_is_passable(ee.x, ee.y)
 				&& steps[ee.x+ee.y*width] == 0) {
 					links[ee.x+ee.y*width] = Point(e.x, e.y);
 					steps[ee.x+ee.y*width] = steps[e.x+e.y*width]+1;
@@ -203,6 +213,13 @@ class Map
 			}
 		}
 		return [];
+	}
+
+	Point[] findPath(int source_x, int source_y, int target_x, int target_y)
+	{
+		return findPath(source_x, source_y, target_x, target_y,
+			&findPathGetIsPassable,
+			&findPathGetNextCoords);
 	}
 
 	bool findPathGetIsPassable(int x, int y)

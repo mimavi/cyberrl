@@ -16,6 +16,7 @@ enum noser;
 mixin template Serializable()
 {
 	import std.traits;
+	import util;
 	//immutable bool is_serializable = true;
 	enum is_serializable = true;
 	@noser static typeof(this) function(Serializer)[string] submakes;
@@ -160,7 +161,7 @@ class Serializer
 		} else static if (is(ValType == ElementType[], ElementType)) {
 			saveDynamicArray!(ValType, KeyType, ElementType)(val, key);
 			return;
-		} else static if (isNumeric!ValType) {
+		} else static if (isNumeric!ValType || isSomeChar!ValType) {
 			saveNumeric(val, key);
 			return;
 		} else static if (isBoolean!ValType) {
@@ -168,7 +169,7 @@ class Serializer
 			return;
 		} else {
 			pragma(msg,
-				"Error: save() does not handle "~ValType.stringof~".");
+				"Error: `save` does not handle "~ValType.stringof~".");
 			static assert(false);
 		}
 	}
@@ -190,12 +191,13 @@ class Serializer
 			return loadStaticArray!(ValType, KeyType, ElementType)(key);
 		} else static if (is(ValType == ElementType[], ElementType)) {
 			return loadDynamicArray!(ValType, KeyType, ElementType)(key);
-		} else static if (isNumeric!ValType) {
+		} else static if (isNumeric!ValType || isSomeChar!ValType) {
 			return loadNumeric!(ValType)(key);
 		} else static if (isBoolean!ValType) {
 			return loadBoolean(key);
 		} else {
-			pragma(msg, "Error: load() does not handle "~ValType.stringof~".");
+			pragma(msg,
+				"Error: `load` does not handle "~ValType.stringof~".");
 			static assert(false);
 		}
 	}
@@ -229,7 +231,13 @@ class Serializer
 		}
 		static if (isIntegral!KeyType) {
 			if ((*stack[$-1])[key].isNull) {
-				return null;
+				static if (is(ValType == class)) {
+					return null;
+				} else static if (is(ValType == struct)) {
+					return ValType.make(this);
+				} else {
+					static assert(false);
+				}
 			}
 		}
 		++stack.length;

@@ -1,6 +1,6 @@
-import term;
 import util;
 import serializer;
+import term;
 
 class Item
 {
@@ -14,7 +14,7 @@ class Item
 	void aftersave(Serializer serializer) {}
 	void afterload(Serializer serializer) {}
 
-	void draw(int x, int y)
+	final void draw(int x, int y)
 	{
 		term.setSymbol(x, y, symbol);
 	}

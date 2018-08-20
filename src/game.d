@@ -80,6 +80,8 @@ class Game
 		{}
 	}
 
+	// XXX: How about drawing the map here instead
+	// and making the `map` module independent of the `term` module?
 	void draw()
 	{
 		map.draw(camera_x, camera_y, 0, 0, 23, 23);

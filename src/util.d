@@ -5,6 +5,7 @@ import std.traits;
 import std.array;
 import std.stdio;
 import std.json;
+import serializer;
 import term;
 
 // XXX: Use enums instead?
@@ -96,8 +97,16 @@ enum Dir
 
 struct Point
 {
+	mixin Serializable;
 	int x, y;
+
+	this(Serializer serializer) {}
 	this(int x, int y) { this.x = x; this.y = y; }
+
+	void beforesave(Serializer serializer) {}
+	void beforeload(Serializer serializer) {}
+	void aftersave(Serializer serializer) {}
+	void afterload(Serializer serializer) {}
 }
 
 template hasAddress(alias T)

@@ -42,7 +42,7 @@ private immutable ubyte[Color.max+1] color_to_b = [
 	Color.white:   128,
 ];
 private immutable ubyte[Color.max+1] bright_color_to_r = [
-	Color.black:   0,
+	Color.black:   64,
 	Color.red:     255,
 	Color.green:   0,
 	Color.yellow:  255,
@@ -52,7 +52,7 @@ private immutable ubyte[Color.max+1] bright_color_to_r = [
 	Color.white:   255,
 ];
 private immutable ubyte[Color.max+1] bright_color_to_g = [
-	Color.black:   0,
+	Color.black:   64,
 	Color.red:     0,
 	Color.green:   255,
 	Color.yellow:  255,
@@ -62,7 +62,7 @@ private immutable ubyte[Color.max+1] bright_color_to_g = [
 	Color.white:   255,
 ];
 private immutable ubyte[Color.max+1] bright_color_to_b = [
-	Color.black:   0,
+	Color.black:   64,
 	Color.red:     0,
 	Color.green:   0,
 	Color.yellow:  0,
@@ -216,7 +216,8 @@ static this()
 	];
 	DerelictSDL2.load();
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
-		throw new TermException(format("Unable to initialize SDL: %s", SDL_GetError()));
+		throw new TermException(format("Unable to initialize SDL: %s",
+			SDL_GetError()));
 	window = SDL_CreateWindow(
 		"CyberRL",
 		SDL_WINDOWPOS_CENTERED,
@@ -233,16 +234,18 @@ static this()
 		throw new TermException(
 			format("Unable to create SDL renderer: %s", SDL_GetError()));
 	}
-	SDL_Surface* codepagesur = SDL_LoadBMP("sdl2/cp437.bmp");
-	if (codepagesur is null)
+	SDL_Surface* codepage_surface = SDL_LoadBMP("sdl2/cp437.bmp");
+	if (codepage_surface is null)
 		throw new TermException(
 			format("Unable to load 'sdl2/cp437.bmp': %s", SDL_GetError()));
-	codepage = SDL_CreateTextureFromSurface(renderer, codepagesur);
+	SDL_SetColorKey(codepage_surface, SDL_TRUE,
+		SDL_MapRGB((*codepage_surface).format, 0, 0, 0));
+	codepage = SDL_CreateTextureFromSurface(renderer, codepage_surface);
 	if (codepage is null)
 		throw new TermException(
 			format("Unable to create SDL texture from SDL surface: %s",
 			SDL_GetError()));
-	SDL_FreeSurface(codepagesur);
+	SDL_FreeSurface(codepage_surface);
 }
 
 static ~this()
@@ -287,18 +290,29 @@ void refresh()
 	for (int i = 0; i < term_width; ++i) {
 		for (int j = 0; j < term_height; ++j) {
 			int index = i+j*term_width;
-			SDL_Rect srcrect = {
+			SDL_Rect bg_rect = {
+				x: (219%codepage_width)*symbol_width,
+				y: (219/codepage_width)*symbol_height,
+				w: symbol_width,
+				h: symbol_height,
+			};
+			SDL_Rect src_rect = {
 				x: (symbol_array[index].chr%codepage_width)*symbol_width,
 				y: (symbol_array[index].chr/codepage_width)*symbol_height,
 				w: symbol_width,
 				h: symbol_height,
 			};
-			SDL_Rect destrect = {
+			SDL_Rect dest_rect = {
 				x: i*symbol_width,
 				y: j*symbol_height,
 				w: symbol_width,
 				h: symbol_height,
 			};
+			SDL_SetTextureColorMod(codepage,
+				color_to_r[symbol_array[index].bg_color],
+				color_to_g[symbol_array[index].bg_color],
+				color_to_b[symbol_array[index].bg_color]);
+			SDL_RenderCopy(renderer, codepage, &bg_rect, &dest_rect);
 			if (symbol_array[index].is_bright) {
 				SDL_SetTextureColorMod(codepage,
 					bright_color_to_r[symbol_array[index].color],
@@ -310,7 +324,7 @@ void refresh()
 					color_to_g[symbol_array[index].color],
 					color_to_b[symbol_array[index].color]);
 			}
-			SDL_RenderCopy(renderer, codepage, &srcrect, &destrect);
+			SDL_RenderCopy(renderer, codepage, &src_rect, &dest_rect);
 		}
 	}
 	SDL_RenderPresent(renderer);

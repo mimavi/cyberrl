@@ -1,5 +1,6 @@
 import std.format;
 import term;
+import serializer;
 
 immutable int term_width = 80;
 immutable int term_height = 24;
@@ -39,10 +40,18 @@ enum Color
 
 struct Symbol
 {
+	mixin Serializable;
+
 	char chr = ' ';
 	Color color = Color.white;
 	Color bg_color = Color.black;
 	bool is_bright = false;
+
+	this(Serializer serializer) {}
+	void beforesave(Serializer serializer) {}
+	void beforeload(Serializer serializer) {}
+	void aftersave(Serializer serializer) {}
+	void afterload(Serializer serializer) {}
 
 	this(char chr,
 		Color color = Color.white,
