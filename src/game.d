@@ -1,17 +1,45 @@
 import std.algorithm.comparison;
+import std.conv;
+import std.container;
 import std.stdio;
 import std.file;
-import std.conv;
 import util;
-import serializer;
+import ser;
 import term;
-import actor;
+import player;
 import map;
+
+struct Msg
+{
+	mixin Serializable;
+	mixin SimplySerialized;
+	string str;
+	Color color;
+	bool is_bright;
+
+	this(Serializer serializer) {}
+	this(string str, Color color, bool is_bright)
+	{
+		this.str = str;
+		this.color = color;
+		this.is_bright = is_bright;
+	}
+}
 
 class Game
 {
 	mixin Serializable;
-	immutable int camera_width = 23, camera_height = 23;
+
+	enum camera_x_margin = 1;
+	enum camera_y_margin = 1;
+	enum camera_width = 21;
+	enum camera_height = 21;
+	enum msg_x_margin = 24;
+	enum msg_y_margin = 2;
+	enum msg_display_width = term_width-msg_x_margin;
+	enum msg_display_height = term_height-msg_y_margin;
+
+	Array!Msg msgs;
 	Map map;
 	@noser PlayerActor player;
 	ulong id = 0; // `id == 0` means none.
@@ -19,26 +47,15 @@ class Game
 
 	this()
 	{
-		// Find the lowest inexistant id and claim it.
-		//ulong i;
-		//for (i = 0; exists(to!string(i)~".json"); ++i) {}
-		//this(id);
-	//}
-
-	//this(int id)
-	//{
-		//this.id = id;
-		/*if (!exists(to!string(i)~".json")) {
-			
-		}*/
 		map = new Map(300, 300);
+		map.game = this;
 	}
 
 	this(Serializer serializer) { this(); }
 	void beforesave(Serializer serializer) {}
 	void beforeload(Serializer serializer) {}
 	void aftersave(Serializer serializer) {}
-	void afterload(Serializer serializer) {}
+	void afterload(Serializer serializer) { map.game = this; }
 
 	void read(ulong id)
 	{
@@ -84,7 +101,40 @@ class Game
 	// and making the `map` module independent of the `term` module?
 	void draw()
 	{
-		map.draw(camera_x, camera_y, 0, 0, 23, 23);
+		map.draw(camera_x, camera_y, camera_x_margin, camera_y_margin,
+			camera_width, camera_height);
+
+		if (msgs.length > 0) {
+			auto lines = splitAtSpaces(msgs[$-1].str, msg_display_width);
+			int y = msg_display_height-lines.length;
+			int index = msgs.length-2;
+			while (index >= 0 && y >= msg_y_margin) {
+				foreach (int i, string e; lines) {
+					term.write(msg_x_margin, y+i, e,
+						msgs[index].color, msgs[index].is_bright);
+				}
+				lines = splitAtSpaces(msgs[index].str, msg_display_width);
+				y -= lines.length;
+				--index;
+			}
+		}
+
+		//foreach (int i, Msg e; msgs) {
+		//foreach (i; 0..min(msgs.length, msg_display_height)) {
+			/*auto msg = msgs[$-i-1];
+			term.write(msg_x_margin, msg_y_margin+msg_display_height-i-1, 
+				msg.str, msg.color, msg.is_bright,
+				msg_display_width);*/
+		//}
+		/*for ({int i = 0; auto msg = msgs}
+		i < min(msgs.length, msg_display_height);
+		i += */
+
+		/*int i = 0;
+		do {
+			auto msg = msgs[$-i-1];
+			i += lines.length;
+		} while (i < min(msgs.length, msg_display_height));*/
 	}
 
 	void centerizeCamera(int x, int y)
@@ -103,5 +153,15 @@ class Game
 	static string idToFilename(ulong id)
 	{
 		return "saves/"~to!string(id)~".json";
+	}
+
+	// TODO: Allow for several source points to be specified.
+	void sendVisibleEventMsg(int x, int y, string str,
+		Color color, bool is_bright)
+	{
+		if (map.getTile(x, y).is_visible) {
+			//menu.sendMsg(msg, color, is_bright);
+			msgs.insertBack(Msg(str, color, is_bright));
+		}
 	}
 }

@@ -1,11 +1,11 @@
 import std.container;
 import std.datetime;
 import std.random;
+import std.math;
 import std.traits;
 import std.array;
 import std.stdio;
-import std.json;
-import serializer;
+import ser;
 import term;
 
 // XXX: Use enums instead?
@@ -146,6 +146,48 @@ static this()
 	rng = Random(cast(uint)Clock.currTime().fracSecs().total!"hnsecs");
 }
 
+string[] splitAtSpaces(string str, int width)
+{
+	string[] results;
+	if (str.length < width) {
+		return [str];
+	}
+	for (int crack = 0; str.length >= width; str = str[crack+1..$]) {
+		crack = getSplitAtSpace(str, width);
+		if (crack == -1) {
+			return [];
+		}
+		++results.length;
+		results[$-1] = str[0..crack];
+	}
+	if (str.length > 0) {
+		++results.length;
+		results[$-1] = str;
+	}
+	return results;
+}
+
+// Returns -1 if splitting fails.
+int getSplitAtSpace(string str, int width)
+{
+	//if (str[width-1] != ' ' && str[width] != ' ') {
+	if (str.length < width) {
+		return str.length;
+	}
+	if (str[width-1] == ' ') {
+		return width-1;
+	}
+	if (str[width] == ' ') {
+		return width;
+	}
+	foreach (i; 0..width-2) {
+		if (str[width-2-i] == ' ') {
+			return width-2-i;
+		}
+	}
+	return -1;
+}
+
 // TODO: Add unittests for this function.
 Signed!T1 umod(T1, T2)(T1 dividend, T2 divisor)
 {
@@ -154,4 +196,19 @@ Signed!T1 umod(T1, T2)(T1 dividend, T2 divisor)
 		return divisor+signed_modulo;
 	}
 	return signed_modulo;
+}
+
+bool chance(int numerator, int denominator)
+{
+	return uniform!"[]"(1, denominator) <= numerator;
+}
+
+bool sigmoidChance(int x)
+{
+	return chance(1+x+abs(x), 2+2*abs(x));
+}
+
+int scaledSigmoid(int scale, int x)
+{
+	return scale*(1+x+abs(x))/(2+2*abs(x));
 }

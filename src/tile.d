@@ -1,5 +1,5 @@
 import util;
-import serializer;
+import ser;
 import term;
 import actor;
 import item;

@@ -1,6 +1,7 @@
 import std.format;
+import util;
 import term;
-import serializer;
+import ser;
 
 immutable int term_width = 80;
 immutable int term_height = 24;
@@ -83,15 +84,19 @@ class TermException : Exception
 
 void setSymbol(int x, int y, Symbol symbol)
 {
-	if (x >= term_width || y >= term_height || x < 0 || y < 0)
-		throw new TermException(format!"attempt to write out of terminal bounds: %d %d"(x, y));
+	if (x >= term_width || y >= term_height || x < 0 || y < 0) {
+		throw new TermException(
+			format!"attempt to write out of terminal bounds: %d %d"(x, y));
+	}
 	symbol_array[x+y*term_width] = symbol;
 }
 
 Symbol getSymbol(int x, int y)
 {
-	if (x >= term_width || y >= term_height || x < 0 || y < 0)
-		throw new TermException(format!"attempt to read out of terminal bounds: %d %d"(x, y));
+	if (x >= term_width || y >= term_height || x < 0 || y < 0) {
+		throw new TermException(
+			format!"attempt to read out of terminal bounds: %d %d"(x, y));
+	}
 	return symbol_array[x+y*term_width];
 }
 
@@ -101,28 +106,30 @@ void write(int x, int y, string str,
 	bool is_bright = false,
 	int width = term_width)
 {
-	// TODO: Proper automatic line breaking.
-	// `term_width` is useless a.t.m..
-	foreach(int i, char c; str) {
-		setSymbol(x+i, y, Symbol(c, color, bg_color, is_bright));
+	string[] lines = splitAtSpaces(str, width);
+	foreach (int i, string e; lines) {
+		foreach(int j, char c; e) {
+			setSymbol(x+j, y+i, Symbol(c, color, bg_color, is_bright));
+		}
 	}
 }
 
-void write(int x, int y, string str, bool is_bright)
+void write(int x, int y, string str, bool is_bright, int width = term_width)
 {
-	write(x, y, str, Color.white, Color.black, is_bright);
+	write(x, y, str, Color.white, Color.black, is_bright, width);
 }
 
-void write(int x, int y, string str, Color color, bool is_bright)
+void write(int x, int y, string str, Color color, bool is_bright,
+	int width = term_width)
 {
-	write(x, y, str, color, Color.black, is_bright);
+	write(x, y, str, color, Color.black, is_bright, width);
 }
 
 void clear()
 {
-	foreach (y; 0..term_height) {
-		foreach (x; 0..term_width) {
-			setSymbol(x, y, Symbol());
+	foreach (i; 0..term_width) {
+		foreach (j; 0..term_height) {
+			setSymbol(i, j, Symbol());
 		}
 	}
 }

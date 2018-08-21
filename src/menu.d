@@ -15,6 +15,8 @@ import main;
 import game;
 import tile;
 import actor;
+import player;
+import actor_defs;
 import item;
 
 // TODO: Function that will cover both `mainMenu()` and `inGameMenu()`.
@@ -147,7 +149,6 @@ bool newGameMenu()
 			main_game.map.getTile(x, y).items.insert(new LightkatanaItem);
 		}
 		main_game.centerizeCamera(main_game.player.x, main_game.player.y);
-		import std.stdio; writeln(main_game.map.findPath(main_game.player.x, main_game.player.y, 20, 20));
 		main_game.run();
 	}
 

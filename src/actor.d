@@ -1,12 +1,12 @@
 import std.algorithm.comparison;
 import std.container;
+import std.format; // TODO: Don't use `format` function here.
+
 import std.random;
 import std.math;
 import util;
-import serializer;
+import ser;
 import term;
-import main;
-import menu;
 import map;
 import tile;
 import item;
@@ -58,6 +58,7 @@ enum ActorStat
 struct ActorStats
 {
 	mixin Serializable;
+	mixin SimplySerialized;
 	enum attribute_min = -5;
 	enum attribute_max = 5;
 	enum skill_min = 0;
@@ -92,10 +93,6 @@ struct ActorStats
 	alias stats this;
 
 	this(Serializer serializer) {}
-	void beforesave(Serializer serializer) {}
-	void beforeload(Serializer serializer) {}
-	void aftersave(Serializer serializer) {}
-	void afterload(Serializer serializer) {}
 
 	string toString(ActorStat stat)
 	{
@@ -149,6 +146,17 @@ class Actor
 	enum base_ap_cost = 100;
 	enum agility_ap_weight = 10;
 	enum dexterity_ap_weight = 10;
+	enum hitting_ap_weight = 5;
+
+	enum dexterity_hit_chance_weight = 1;
+	enum observantness_hit_chance_weight = 1;
+	enum striking_hit_chance_weight = 1;
+	enum agility_hit_chance_weight = 1;
+	enum dodging_hit_chance_weight = 1;
+	enum strength_hit_damage_weight = 1;
+	enum striking_hit_damage_weight = 1;
+	enum dexterity_hit_damage_weight = 1;
+
 	enum ap_action_threshold = 100;
 
 	@noser Map map;
@@ -156,11 +164,16 @@ class Actor
 	Array!Item items;
 	bool is_despawned = false;
 
+	int max_hp;
+	int hp;
+
+	protected int weapon_index = -1;
 	private int ap = 0;
 	private int _x, _y;
 
 	abstract bool subupdate(); // Return false if `Map.update()` shall return.
 	@property abstract Symbol symbol();
+	@property abstract string name();
 
 	// "ap" means "action points". "eff" means "effective".
 	@property int quickness() { return 0; }
@@ -173,8 +186,9 @@ class Actor
 
 	this()
 	{
-		stats = ActorStats();
-		items = Array!Item();
+		//stats = ActorStats();
+		//items = Array!Item();
+		hp = max_hp;
 	}
 
 	this(Serializer serializer) { this(); }
@@ -239,6 +253,7 @@ class Actor
 		ap -= base_ap_cost - agility_ap_weight*stats[ActorStat.agility];
 		return true;
 	}
+	bool actMoveTo(Point p) { return actMoveTo(p.x, p.y); }
 
 	bool actPickUp(int index)
 	{
@@ -267,116 +282,59 @@ class Actor
 		ap -= base_ap_cost - dexterity_ap_weight*stats[ActorStat.dexterity];
 		return true;
 	}
-}
 
-class PlayerActor : Actor
-{
-	mixin InheritedSerializable;
-
-	@property override Symbol symbol()
-		{ return Symbol('@', Color.white, Color.black, true); }
-
-	this() {}
-	this(Serializer serializer) { this(); }
-
-	override void initPos(int x, int y)
+	bool actWield(int index)
 	{
-		super.initPos(x, y);
-		main_game.centerizeCamera(x, y);
+		if (index < 0 || index >= items.length) {
+			return false;
+		}
+		weapon_index = index;
+		return true;
 	}
 
-	override bool subupdate()
+	// TODO: If either attacker or target is not visible,
+	// then properly replace their name with some replacement,
+	// e.g. "somebody".
+	bool actHit(int x, int y)
 	{
-		void fovCallback(int tile_x, int tile_y, Tile tile)
-		{
-			//tile.draw(x, y);
-			//tile.is_visibles = true;
-			//tile.is_discovered = true;
-			tile.is_visible = true;
-			map.visibles.insertBack(Point(tile_x, tile_y));
+		auto target = map.getTile(x, y).actor;
+		if (target is null) {
+			ap -= base_ap_cost
+				- dexterity_ap_weight*stats[ActorStat.dexterity]
+				- hitting_ap_weight*stats[ActorStat.striking];
+			map.game.sendVisibleEventMsg(target.x, target.y,
+				format("%s hits thin air.", name), Color.red, true);
+			return true;
 		}
-
-		foreach (e; map.visibles[]) {
-			map.getTile(e).is_visible = false;
-		}
-
-		map.visibles.length = 0;
-		map.fov(x, y, int.max, &fovCallback);
-
-		bool has_acted = false;
-
-		do {
-			main_game.draw();
-			auto key = term.readKey();
-			if (key == Key.escape) {
-				if (!menu.inGameMenu(main_game)) {
-					return false;
-				}
-			} else if (key >= Key.digit_1 && key <= Key.digit_9) {
-				has_acted = 
-					actMoveTo(x+util.key_to_x[key], y+util.key_to_y[key]);
-			} else if (key == Key.g) {
-				int index;
-				if (menu.selectItem(map.getTile(x, y).items,
-					"Select item to pick up:", index)) {
-					has_acted = actPickUp(index);
-				}
-			} else if (key == Key.d) {
-				int index;
-				if (menu.selectItem(items,
-					"Select item to drop:", index)) {
-					has_acted = actDrop(index);
-				}
-			} else if (key == Key.period) {
-				has_acted = actWait();
+		if (sigmoidChance(
+		dexterity_hit_chance_weight*stats[ActorStat.dexterity]
+		+ striking_hit_chance_weight*stats[ActorStat.striking]
+		+ observantness_hit_chance_weight*stats[ActorStat.observantness]
+		- agility_hit_chance_weight*target.stats[ActorStat.agility]
+		- dodging_hit_chance_weight*target.stats[ActorStat.dodging])) {
+			if (weapon_index != -1 && items[weapon_index].is_hit) {
+				auto weapon = items[weapon_index];
+				// TODO: Use effective stats instead.
+				// TODO: Split the calculation into several smaller ones.
+				target.hp -= uniform!"[]"(0, max(0,
+					scaledSigmoid(weapon.blunt_hit_damage,
+					strength_hit_damage_weight*stats[ActorStat.strength]
+					+ striking_hit_damage_weight*stats[ActorStat.striking]
+					+ scaledSigmoid(weapon.sharp_hit_damage,
+					+ strength_hit_damage_weight*stats[ActorStat.strength]
+					+ striking_hit_damage_weight*stats[ActorStat.striking]
+					+ dexterity_hit_damage_weight*stats[ActorStat.dexterity])
+					)));
+				map.game.sendVisibleEventMsg(target.x, target.y,
+					format("%s hits %s. hits observes meaningless repeating fast localized square integration", name, target.name),
+					Color.red, true);
+				return true;
 			}
-		} while (!has_acted);
-		return true;
-	}
-}
-
-class AiActor : Actor
-{
-	mixin InheritedSerializable;
-	enum max_action_attempts_num = 100;
-
-	override bool subupdate()
-	{
-		aiMeander();
-		return true;
-	}
-
-	void aiMeander()
-	{
-		bool has_acted = false;
-		// TODO: Timeout when too many attempts fail.
-		for (int i = 0; !has_acted && i < max_action_attempts_num; ++i) {
-			has_acted
-				= actMoveTo(x+1-uniform(0, 3, rng), y+1-uniform(0, 3, rng));
+			// For now, you cannot hit without a weapon.
 		}
+		map.game.sendVisibleEventMsg(target.x, target.y,
+			format("%s misses %s.", name, target.name), Color.red, true);
+		return true;
 	}
-
-	/*void aiFollow()
-	{
-		bool has_acted = false;
-		//Point[] path = this.map.findPath(x, y,
-			//this.map.game.player.x, this.map.game.player.y);
-		//Point[] path = map.findPath(x, y, x, y);
-	}*/
-
-	void aiWander()
-	{
-	}
-}
-
-class LightsamuraiAiActor : AiActor
-{
-	mixin InheritedSerializable;
-
-	this() {}
-	this(Serializer serializer) {}
-
-	@property override Symbol symbol()
-		{ return Symbol('@', Color.magenta, true); }
-
+	bool actHit(Point p) { return actHit(p.x, p.y); }
 }

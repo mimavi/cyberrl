@@ -5,8 +5,9 @@ import std.random;
 import std.range;
 import std.math;
 import util;
-import serializer;
+import ser;
 import term;
+import game;
 import tile;
 import actor;
 import item;
@@ -17,7 +18,10 @@ import item;
 class Map
 {
 	mixin Serializable;
+
+	@noser Game game;
 	Array!Point visibles;
+
 	private Tile[] tiles;
 	private DList!Actor actors;
 	@noser private Tile tmp;
@@ -114,7 +118,7 @@ class Map
 		//fov(src_x+width/2, src_y+height/2, 11, &drawCallback);
 		for (int i = 0; i < width; ++i) {
 			for (int ii = 0; ii < height; ++ii) {
-				getTile(src_x+i, src_y+ii).draw(i, ii);
+				getTile(src_x+i, src_y+ii).draw(dest_x+i, dest_y+ii);
 			}
 		}
 	}
@@ -192,7 +196,7 @@ class Map
 					}
 
 					Point[] result = [Point(source_x, source_y)];
-					result.length = steps[e.x+e.y*width]+1;
+					result.length = steps[e.x+e.y*width]+2;
 					result[$-1] = Point(target_x, target_y);
 
 					for ({Point cur = e; int ii = 0;}
