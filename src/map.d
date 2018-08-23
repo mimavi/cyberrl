@@ -12,9 +12,6 @@ import tile;
 import actor;
 import item;
 
-// TODO: Rename `blocking` to `!passable` in movement context.
-// It's clearer.
-
 class Map
 {
 	mixin Serializable;
@@ -43,7 +40,7 @@ class Map
 		tiles.length = width*height;
 		foreach (y; 0..height) {
 			foreach (x; 0..width) {
-				getTile(x, y) = new FloorTile;
+				getTile(x, y) = new DefaultWallTile;
 			}
 		}
 		//actors = DList!Actor(); // XXX: Umm, pointless?
@@ -76,6 +73,7 @@ class Map
 		actors.insertBack(actor);
 		actor.initPos(x, y);
 	}
+	void spawn(Actor actor, Point p) { spawn(actor, p.x, p.y); }
 
 	void despawn(Actor actor)
 	{
@@ -156,11 +154,11 @@ class Map
 
 			callback(tile_x, tile_y, tile);
 
-			if (!was_blocking && tile.is_blocking) {
+			if (!was_blocking && !tile.is_transparent) {
 				fovScan(center_x, center_y, dir_c, dir_r, row+1, range, vert,
 					callback, start_slope, (cell+0.5)/(row-0.5));
 				was_blocking = true;
-			} else if (was_blocking && !tile.is_blocking) {
+			} else if (was_blocking && tile.is_transparent) {
 				start_slope = (cell+0.5)/(row+0.5);
 				was_blocking = false;
 			}
@@ -228,7 +226,7 @@ class Map
 
 	bool findPathGetIsPassable(int x, int y)
 	{
-		return !getTile(x, y).is_blocking;
+		return getTile(x, y).is_walkable;
 	}
 
 	Point[8] findPathGetNextCoords(int x, int y)

@@ -13,11 +13,14 @@ import util;
 import term;
 import main;
 import game;
+import map;
+import levelgen;
 import tile;
 import actor;
 import player;
 import actor_defs;
 import item;
+import ser;
 
 // TODO: Function that will cover both `mainMenu()` and `inGameMenu()`.
 void mainMenu()
@@ -94,21 +97,22 @@ bool newGameMenu()
 	int knowledge_points_num = 5;
 	bool is_right_side = false;
 
-	main_game = new Game;
-	main_game.player = new PlayerActor;
-	main_game.player.items.insertBack(new LightkatanaItem);
+	//main_game = new Game;
+	//main_game.player = new PlayerActor;
+	//main_game.player.items.insertBack(new LightkatanaItem);
+	PlayerActor player = new PlayerActor;
 
 	do {
 		if (key == Key.digit_4) {
 			ActorStat stat = is_right_side?
 				right_stats[pos] : left_stats[pos];
-			newGameMenuDecrementStat(main_game.player.stats, stat,
+			newGameMenuDecrementStat(player.stats, stat,
 				attribute_points_num, skill_points_num,
 				knowledge_points_num);
 		} else if (key == Key.digit_6) {
 			ActorStat stat = is_right_side?
 				right_stats[pos] : left_stats[pos];
-			newGameMenuIncrementStat(main_game.player.stats, stat,
+			newGameMenuIncrementStat(player.stats, stat,
 				attribute_points_num, skill_points_num,
 				knowledge_points_num);
 		} else if ((key >= Key.a && key <= Key.Z) || key == Key.space) {
@@ -120,34 +124,30 @@ bool newGameMenu()
 				name = name[0..$-1];
 			}
 		}
-		drawNewGameMenu(name, main_game.player.stats, pos,
+		drawNewGameMenu(name, player.stats, pos,
 			attribute_points_num, skill_points_num, knowledge_points_num);
 		string[term_height] left_strs, right_strs;
 		for (int i = 0; i < term_height; ++i) {
 			left_strs[i] = (left_stats[i] == ActorStat.none)?
-				"" : "  "~main_game.player.stats.toString(left_stats[i]);
+				"" : "  "~player.stats.toString(left_stats[i]);
 			right_strs[i] = (right_stats[i] == ActorStat.none)?
-				"" : "  "~main_game.player.stats.toString(right_stats[i]);
+				"" : "  "~player.stats.toString(right_stats[i]);
 		}
 		dualListNonblocking(left_strs, right_strs, key, pos, is_right_side);
 		key = term.readKey();
 	} while (key != Key.enter && key != Key.escape);
 
 	if (key == Key.enter) {
-		main_game.map.spawn(main_game.player, 10, 10);
-		main_game.map.spawn(new LightsamuraiAiActor, 20, 10);
-		auto rng = Random(
-			cast(uint) Clock.currTime().fracSecs().total!"hnsecs");
-		foreach (i; 1..10000) {
-			int x = uniform(0, 300, rng);
-			int y = uniform(0, 300, rng);
-			main_game.map.getTile(x, y) = new WallTile;
-		}
-		foreach (i; 1..10000) {
-			int x = uniform(0, 300, rng);
-			int y = uniform(0, 300, rng);
-			main_game.map.getTile(x, y).items.insert(new LightkatanaItem);
-		}
+		Map map = new Map(100, 100);
+		LevelGenerator generator = new LevelGenerator(map);
+		generator.genAaRectRooms(AaRect(1, 1, 99, 99), 500, 10);
+		generator.genNarrowAaRoomCorridors(AaRect(1, 1, 99, 99), 250, 1, 5, 10);
+
+		main_game = new Game(map);
+		// TODO: Create a separate routine for spawning the player.
+		map.spawn(player, generator.floors[0]);
+		main_game.player = player;
+
 		main_game.centerizeCamera(main_game.player.x, main_game.player.y);
 		main_game.run();
 	}
@@ -247,7 +247,8 @@ bool loadGameMenu()
 	if (!result) {
 		return true;
 	}
-	main_game = new Game;
+	Serializer serializer = new Serializer;
+	main_game = Game.make(serializer);
 
 	// Remove trailing ".json" then read.
 	main_game.read(Game.filenameToId(filenames[pos])); 
@@ -370,11 +371,13 @@ void drawDualList(string[term_height] left_strs,
 	}
 }
 
-bool selectItem(Array!Item items, string header, ref int index)
+bool selectItem(Array!Item items, string[int] appends, string header, 
+	ref int index)
 {
 	int pos = 0;
 	Key key;
-	drawSelectItem(items, header, pos);
+
+	drawSelectItem(items, appends, header, pos);
 	do {
 		key = term.readKey();
 		if (key == Key.escape) {
@@ -382,15 +385,22 @@ bool selectItem(Array!Item items, string header, ref int index)
 		}
 	} while (key_to_chr[key] == 0
 	|| chr_to_index[key_to_chr[key]] >= items.length);
+
 	index = chr_to_index[key_to_chr[key]];
 	return true;
 }
 
-void drawSelectItem(Array!Item items, string header, int pos)
+void drawSelectItem(Array!Item items, string[int] appends, string header,
+	int pos)
 {
 	term.clear(); // TODO: Optimize. Can be done without clearing.
 	term.write(0, 0, header);
+
 	foreach (i; pos..(pos+min(items.length, term_height-2))) {
-		term.write(1, i+1, index_to_chr[i]~" - "~items[i].name);
+		if ((i in appends) !is null) {
+			term.write(1, i+1, index_to_chr[i]~" - "~items[i].name~appends[i]);
+		} else {
+			term.write(1, i+1, index_to_chr[i]~" - "~items[i].name);
+		}
 	}
 }

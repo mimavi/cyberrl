@@ -5,16 +5,23 @@ import actor;
 import item;
 import std.container;
 
+// XXX: Perhaps place it in `map.d`?
+bool debug_is_all_visible = false;
+
 class Tile
 {
 	mixin Serializable;
 	@noser Actor actor;
 	Array!Item items;
+
 	private Symbol last_visible_symbol = Symbol(' ');
 	private bool _is_visible = false;
 
-	@property abstract bool is_blocking();
+	@property abstract bool is_walkable();
+	@property abstract bool is_transparent();
 	@property protected abstract Symbol symbol();
+	@property bool is_default() { return false; }
+	@property bool is_static() { return true; }
 
 	@property void is_visible(bool val)
 	{
@@ -23,7 +30,14 @@ class Tile
 			last_visible_symbol = visible_symbol;
 		}
 	}
-	@property bool is_visible() { return _is_visible; }
+
+	@property bool is_visible()
+	{
+		if (debug_is_all_visible) {
+			return true;
+		}
+		return _is_visible;
+	}
 
 	@property Symbol visible_symbol()
 	{
@@ -76,9 +90,9 @@ class Tile
 class FloorTile : Tile
 {
 	mixin InheritedSerializable;
-	@property override Symbol symbol()
-		{ return Symbol('.', Color.white, Color.black, false); }
-	@property override bool is_blocking() { return false; }
+	@property override Symbol symbol() { return Symbol('.', Color.white); }
+	@property override bool is_walkable() { return true; }
+	@property override bool is_transparent() { return true; }
 	this() { super(); }
 	this(Serializer serializer) { super(serializer); }
 }
@@ -86,9 +100,17 @@ class FloorTile : Tile
 class WallTile : Tile
 {
 	mixin InheritedSerializable;
-	@property override Symbol symbol()
-		{ return Symbol('#', Color.white, Color.black, false); }
-	@property override bool is_blocking() { return true; }
+	@property override Symbol symbol() { return Symbol('#', Color.white); }
+	@property override bool is_walkable() { return false; }
+	@property override bool is_transparent() { return false; }
+	this() { super(); }
+	this(Serializer serializer) { super(serializer); }
+}
+
+class DefaultWallTile : WallTile
+{
+	mixin InheritedSerializable;
+	@property override bool is_default() { return true; }
 	this() { super(); }
 	this(Serializer serializer) { super(serializer); }
 }
@@ -99,5 +121,27 @@ class MarkerFloorTile : FloorTile
 	Symbol _symbol;
 	@property override Symbol symbol() { return _symbol; }
 	this(Color color) { super(); _symbol = Symbol('.', color, true); }
+	this(Serializer serializer) { super(serializer); }
+}
+
+class HDoorTile : Tile
+{
+	mixin InheritedSerializable;
+	@property override Symbol symbol() { return Symbol('+', Color.yellow); }
+	@property override bool is_static() { return false; }
+	@property override bool is_walkable() { return /*false;*/ true; }
+	@property override bool is_transparent() { return false; }
+	this() { super(); }
+	this(Serializer serializer) { super(serializer); }
+}
+
+class VDoorTile : Tile
+{
+	mixin InheritedSerializable;
+	@property override Symbol symbol() { return Symbol('+', Color.yellow); }
+	@property override bool is_static() { return false; }
+	@property override bool is_walkable() { return /*false;*/ true; }
+	@property override bool is_transparent() { return false; }
+	this() { super(); }
 	this(Serializer serializer) { super(serializer); }
 }

@@ -27,20 +27,22 @@ class AiActor : Actor
 		}
 	}
 
+	void aiWander()
+	{
+	}
+
 	void aiFollow()
 	{
 		bool has_acted = false;
 		Point[] path = this.map.findPath(x, y,
 			map.game.player.x, map.game.player.y);
 
-		if (map.game.player is map.getTile(path[1]).actor) {
+		if (path.length <= 1) {
+			aiMeander();
+		} else if (map.game.player is map.getTile(path[1]).actor) {
 			actHit(path[1]);
 		} else if (!actMoveTo(path[1])) {
 			aiMeander();
 		}
-	}
-
-	void aiWander()
-	{
 	}
 }

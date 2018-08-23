@@ -1,3 +1,6 @@
+debug {
+	public import std.stdio;
+}
 import std.container;
 import std.datetime;
 import std.random;
@@ -7,6 +10,8 @@ import std.array;
 import std.stdio;
 import ser;
 import term;
+
+// TODO: Add unittests.
 
 // XXX: Use enums instead?
 // TODO: Make it an array of points instead.
@@ -21,6 +26,7 @@ immutable int[Key.max+1] key_to_y = [
 	Key.digit_7: -1, Key.digit_8: -1, Key.digit_9: -1,
 ];
 
+// Note: modulo addition or substraction of 2 causes a 90 degree turn.
 immutable Point[Dir.max+1] dir_to_point = [
 	Dir.down_left: Point(-1, 1),
 	Dir.down: Point(0, 1),
@@ -32,6 +38,7 @@ immutable Point[Dir.max+1] dir_to_point = [
 	Dir.up: Point(0, -1),
 	Dir.up_right: Point(1, -1),
 ];
+
 
 immutable char[Key.max+1] key_to_chr = [
 	Key.digit_0: '0', 
@@ -80,6 +87,10 @@ immutable char[chr_to_index.length] index_to_chr = [
 
 immutable string[int] val_to_minus_5_to_5_adjective;
 immutable string[int] val_to_0_to_5_adjective;
+// XXX: Perhaps use array instead of associative array.
+immutable Dir[Dir] turn_dir_left;
+immutable Dir[Dir] turn_dir_right;
+
 Random rng;
 
 enum Dir
@@ -107,6 +118,24 @@ struct Point
 	void beforeload(Serializer serializer) {}
 	void aftersave(Serializer serializer) {}
 	void afterload(Serializer serializer) {}
+}
+
+// "AaRect" stands for "axis-aligned rectangle".
+struct AaRect
+{
+	int x, y, width, height;
+	this(int x, int y, int width, int height)
+	{
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+	}
+
+	bool get_is_inside(Point p)
+	{
+		return p.x >= x && p.y >= y && p.x <= x+width-1 && p.y <= y+height-1;
+	}
 }
 
 template hasAddress(alias T)
@@ -142,6 +171,18 @@ static this()
 		4: "excellent in",
 		5: "master in",
 	];
+	turn_dir_left = [
+		Dir.right: Dir.up,
+		Dir.up: Dir.left,
+		Dir.left: Dir.down,
+		Dir.down: Dir.right,
+	];
+	turn_dir_right = [
+		Dir.right: Dir.down,
+		Dir.down: Dir.left,
+		Dir.left: Dir.up,
+		Dir.up: Dir.right,
+	];
 
 	rng = Random(cast(uint)Clock.currTime().fracSecs().total!"hnsecs");
 }
@@ -149,7 +190,7 @@ static this()
 string[] splitAtSpaces(string str, int width)
 {
 	string[] results;
-	if (str.length < width) {
+	if (str.length <= width) {
 		return [str];
 	}
 	for (int crack = 0; str.length >= width; str = str[crack+1..$]) {
@@ -188,7 +229,7 @@ int getSplitAtSpace(string str, int width)
 	return -1;
 }
 
-// TODO: Add unittests for this function.
+// Return unsigned remainder.
 Signed!T1 umod(T1, T2)(T1 dividend, T2 divisor)
 {
 	Signed!T1 signed_modulo = dividend%divisor;
@@ -198,17 +239,37 @@ Signed!T1 umod(T1, T2)(T1 dividend, T2 divisor)
 	return signed_modulo;
 }
 
+// There's a `numerator/denominator` chance it returns true.
 bool chance(int numerator, int denominator)
 {
 	return uniform!"[]"(1, denominator) <= numerator;
 }
 
+// A composition of `chance` with a sigmoid function
+// (but not the logistic function).
+// `x` can be any integer and the probability of returning true
+// increases as `x` increases.
+// The probability of returning true approaches 1
+// as `x` approaches positive infinity;
+// approaches 0
+// as `x` approaches negative infinity;
+// is equal to 0.5 when `x == 0`.
 bool sigmoidChance(int x)
 {
 	return chance(1+x+abs(x), 2+2*abs(x));
 }
 
+// A sigmoid function (but not the logistic function).
+// The return value approaches `scale` as `x` approaches positive infinity;
+// approaches 0 as `x` approaches negative infinity;
+// is equal to 0.5 when `x == 0`.
 int scaledSigmoid(int scale, int x)
 {
 	return scale*(1+x+abs(x))/(2+2*abs(x));
 }
+
+// Note that if `max-min` is even, then the distribution won't be
+// symmetrical.
+/*int semibellRandom(int min, int max, int order, Random rng)
+{
+}*/

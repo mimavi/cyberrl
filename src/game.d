@@ -45,13 +45,14 @@ class Game
 	ulong id = 0; // `id == 0` means none.
 	private int camera_x, camera_y;
 
-	this()
+	this(Map map)
 	{
-		map = new Map(300, 300);
-		map.game = this;
+		//map = new Map(300, 300);
+		this.map = map;
+		this.map.game = this;
 	}
 
-	this(Serializer serializer) { this(); }
+	this(Serializer serializer) {}
 	void beforesave(Serializer serializer) {}
 	void beforeload(Serializer serializer) {}
 	void aftersave(Serializer serializer) {}

@@ -13,6 +13,12 @@ class PlayerActor : Actor
 	@property override Symbol symbol()
 		{ return Symbol('@', Color.white, Color.black, true); }
 	@property override string name() { return "you"; }
+	@property private string[int] item_appends()
+	{
+		return [
+			weapon_index: " (currently wielded)",
+		];
+	}
 
 	this() { super(); }
 	this(Serializer serializer) { this(); }
@@ -55,15 +61,21 @@ class PlayerActor : Actor
 					actMoveTo(x+util.key_to_x[key], y+util.key_to_y[key]);
 			} else if (key == Key.g) {
 				int index;
-				if (menu.selectItem(map.getTile(x, y).items,
-					"Select item to pick up:", index)) {
+				if (menu.selectItem(map.getTile(x, y).items, (string[int]).init,
+				"Select item to pick up:", index)) {
 					has_acted = actPickUp(index);
 				}
 			} else if (key == Key.d) {
 				int index;
-				if (menu.selectItem(items,
-					"Select item to drop:", index)) {
+				if (menu.selectItem(items, item_appends, "Select item to drop:",
+				index)) {
 					has_acted = actDrop(index);
+				}
+			} else if (key == Key.w) {
+				int index;
+				if (menu.selectItem(items, item_appends, "Select item to wield:",
+				index)) {
+					has_acted = actWield(index);
 				}
 			} else if (key == Key.period) {
 				has_acted = actWait();

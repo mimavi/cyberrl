@@ -11,6 +11,8 @@ import map;
 import tile;
 import item;
 
+bool debug_can_move_anywhere = false;
+
 // XXX: Perhaps this should be renamed to something clearer, i.e.
 // `ActorStatIndex`.
 enum ActorStat
@@ -244,7 +246,8 @@ class Actor
 		}
 		// XXX: If `map` is null, then an exception is thrown.
 		// How is that """save"""?
-		if (map.getTile(x, y).is_blocking
+		if (!debug_can_move_anywhere
+		&& !map.getTile(x, y).is_walkable
 		|| map.getTile(x, y).actor !is null) {
 			return false;
 		}

@@ -101,28 +101,48 @@ Symbol getSymbol(int x, int y)
 }
 
 void write(int x, int y, string str,
-	Color color = Color.white,
-	Color bg_color = Color.black,
-	bool is_bright = false,
-	int width = term_width)
+	Color color,
+	Color bg_color,
+	bool is_bright,
+	int width)
 {
 	string[] lines = splitAtSpaces(str, width);
 	foreach (int i, string e; lines) {
-		foreach(int j, char c; e) {
+		foreach (int j, char c; e) {
 			setSymbol(x+j, y+i, Symbol(c, color, bg_color, is_bright));
+		}
+		foreach (int j; e.length..width) {
+			setSymbol(x+j, y+i, Symbol(' '));
 		}
 	}
 }
 
-void write(int x, int y, string str, bool is_bright, int width = term_width)
+void write(int x, int y, string str,
+	Color color = Color.white,
+	Color bg_color = Color.black,
+	bool is_bright = false)
+{
+	write(x, y, str, color, bg_color, is_bright, str.length);
+}
+
+void write(int x, int y, string str, bool is_bright, int width)
 {
 	write(x, y, str, Color.white, Color.black, is_bright, width);
 }
 
-void write(int x, int y, string str, Color color, bool is_bright,
-	int width = term_width)
+void write(int x, int y, string str, bool is_bright)
+{
+	write(x, y, str, Color.white, Color.black, is_bright);
+}
+
+void write(int x, int y, string str, Color color, bool is_bright, int width)
 {
 	write(x, y, str, color, Color.black, is_bright, width);
+}
+
+void write(int x, int y, string str, Color color, bool is_bright)
+{
+	write(x, y, str, color, Color.black, is_bright);
 }
 
 void clear()
