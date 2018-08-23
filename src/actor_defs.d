@@ -12,7 +12,7 @@ class LightsamuraiAiActor : AiActor
 	this()
 	{
 		items.insertBack(new LightkatanaItem);
-		weapon_index = items.length-1;
+		weapon_index = cast(int) items.length-1;
 		//actWield(items.length-1);
 	}
 	this(Serializer serializer) { this(); }

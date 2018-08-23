@@ -111,7 +111,7 @@ void write(int x, int y, string str,
 		foreach (int j, char c; e) {
 			setSymbol(x+j, y+i, Symbol(c, color, bg_color, is_bright));
 		}
-		foreach (int j; e.length..width) {
+		foreach (int j; cast(int)e.length..width) {
 			setSymbol(x+j, y+i, Symbol(' '));
 		}
 	}
@@ -122,7 +122,7 @@ void write(int x, int y, string str,
 	Color bg_color = Color.black,
 	bool is_bright = false)
 {
-	write(x, y, str, color, bg_color, is_bright, str.length);
+	write(x, y, str, color, bg_color, is_bright, cast(int)str.length);
 }
 
 void write(int x, int y, string str, bool is_bright, int width)

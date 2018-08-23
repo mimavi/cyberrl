@@ -291,12 +291,12 @@ bool centeredList(string[] labels, bool delegate()[] callbacks,
 	ref int pos)
 {
 	Key key = Key.none;
-	int longest_length = 0;
+	size_t longest_length = 0;
 	foreach (v; labels) {
 		longest_length = max(longest_length, v.length);
 	}
-	int labels_x = term_width/2-longest_length/2;
-	int labels_y = term_height/2-labels.length/2;
+	int labels_x = term_width/2-cast(int)longest_length/2;
+	int labels_y = term_height/2-cast(int)labels.length/2;
 	do {
 		term.clear();
 		foreach (int i, v; labels) {

@@ -107,8 +107,8 @@ class Game
 
 		if (msgs.length > 0) {
 			auto lines = splitAtSpaces(msgs[$-1].str, msg_display_width);
-			int y = msg_y_margin+msg_display_height-lines.length;
-			int index = msgs.length-1;
+			int y = msg_y_margin+msg_display_height-cast(int)lines.length;
+			int index = cast(int)msgs.length-1;
 			while (y+lines.length-1 >= msg_y_margin) {
 				foreach (int i, string e; lines) {
 					if (y+i >= msg_y_margin) {
