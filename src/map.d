@@ -18,6 +18,7 @@ class Map
 
 	@noser Game game;
 	Array!Point visibles;
+	Point[][] zones;
 
 	private Tile[] tiles;
 	private DList!Actor actors;
@@ -174,6 +175,7 @@ class Map
 		bool delegate(int, int) get_is_passable,
 		Point[8] delegate(int, int) get_next_coords)
 	{
+		// XXX: Is this a stack??? Consider renaming it to `queue`...
 		Point[] stack = [Point(source_x, source_y)];
 		int cur_x = source_x, cur_y = source_y;
 		//bool[tiles.length] was_visited; // All false by default.
@@ -243,5 +245,46 @@ class Map
 			ordered_points[i].y = y+dir_to_point[e].y;
 		}
 		return ordered_points;
+	}
+
+	// TODO: Make it flood diagonally as well.
+	void floodfill(int x, int y, bool delegate(int, int) fill)
+	{
+		// XXX: Perhaps a linked list could perform better here.
+		Point[] queue = [Point(x, y)];
+
+		for (int i = 0; i < queue.length; ++i) {
+			auto e = queue[i];
+			if (!fill(e.x, e.y)) {
+				continue;
+			}
+
+			queue.length += 2;
+			queue[$-2] = Point(e.x, e.y-1);
+			queue[$-1] = Point(e.x, e.y+1);
+
+			int ii;
+			for (ii = 1; fill(e.x-ii, e.y); ++ii) {
+				queue.length += 2;
+				queue[$-2] = Point(e.x-ii, e.y-1);
+				queue[$-1] = Point(e.x-ii, e.y+1);
+			}
+			queue.length += 2;
+			queue[$-2] = Point(e.x-ii, e.y-1);
+			queue[$-1] = Point(e.x-ii, e.y+1);
+
+			for (ii = 1; fill(e.x+ii, e.y); ++ii) {
+				queue.length += 2;
+				queue[$-2] = Point(e.x+ii, e.y-1);
+				queue[$-1] = Point(e.x+ii, e.y+1);
+			}
+			queue.length += 2;
+			queue[$-2] = Point(e.x+ii, e.y-1);
+			queue[$-1] = Point(e.x+ii, e.y+1);
+		}
+	}
+	void floodfill(Point p, bool delegate(int, int) fill)
+	{
+		floodfill(p.x, p.y, fill);
 	}
 }

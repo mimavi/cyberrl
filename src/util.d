@@ -13,9 +13,7 @@ import term;
 
 // TODO: Add unittests.
 
-// XXX: Use enums instead?
-// TODO: Make it an array of points instead.
-immutable int[Key.max+1] key_to_x = [
+/*immutable int[Key.max+1] key_to_x = [
 	Key.digit_1: -1, Key.digit_2: 0, Key.digit_3: 1,
 	Key.digit_4: -1, Key.digit_5: 0, Key.digit_6: 1,
 	Key.digit_7: -1, Key.digit_8: 0, Key.digit_9: 1,
@@ -24,6 +22,18 @@ immutable int[Key.max+1] key_to_y = [
 	Key.digit_1: 1, Key.digit_2: 1, Key.digit_3: 1,
 	Key.digit_4: 0, Key.digit_5: 0, Key.digit_6: 0,
 	Key.digit_7: -1, Key.digit_8: -1, Key.digit_9: -1,
+];*/
+
+immutable Point[Key.max+1] key_to_point = [
+	Key.digit_1: Point(-1, 1),
+	Key.digit_2: Point(0, 1),
+	Key.digit_3: Point(1, 1),
+	Key.digit_4: Point(-1, 0),
+	Key.digit_5: Point(0, 0),
+	Key.digit_6: Point(1, 0),
+	Key.digit_7: Point(-1, -1),
+	Key.digit_8: Point(0, -1),
+	Key.digit_9: Point(1, -1),
 ];
 
 // Note: modulo addition or substraction of 2 causes a 90 degree turn.
@@ -106,6 +116,7 @@ enum Dir
 	up_right,
 }
 
+// XXX: Renaming it to `Vector` could make sense.
 struct Point
 {
 	mixin Serializable;
@@ -118,6 +129,22 @@ struct Point
 	void beforeload(Serializer serializer) {}
 	void aftersave(Serializer serializer) {}
 	void afterload(Serializer serializer) {}
+
+	Point opUnary(string op)(Point p)
+	{
+		static if (op == "-") {
+			return Point(-p.x, -p.y);
+		}
+	}
+
+	Point opBinary(string op)(Point p1, Point p2)
+	{
+		static if (op == "+") {
+			return Point(p1.x+p2.x, p1.y+p2.y);
+		} static if (op == "-") {
+			return Point(p1.x-p2.x, p1.y-p2.y);
+		}
+	}
 }
 
 // "AaRect" stands for "axis-aligned rectangle".
@@ -132,15 +159,17 @@ struct AaRect
 		this.height = height;
 	}
 
-	bool get_is_inside(Point p)
+	bool get_is_inside(int x, int y)
 	{
-		return p.x >= x && p.y >= y && p.x <= x+width-1 && p.y <= y+height-1;
+		return x >= this.x && y >= this.y
+		&& x <= this.x+width-1 && y <= this.y+height-1;
 	}
+	bool get_is_inside(Point p) { return get_is_inside(p.x, p.y); }
 }
 
 template hasAddress(alias T)
 {
-	// HACK?
+	// HACK!
 	static if (__traits(compiles, (ref typeof(T) x) {} (T))) {
 		enum hasAddress = true;
 	} else {

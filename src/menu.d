@@ -17,8 +17,10 @@ import map;
 import levelgen;
 import tile;
 import actor;
-import player;
 import actor_defs;
+import body;
+import stat;
+import player;
 import item;
 import ser;
 
@@ -36,60 +38,60 @@ bool newGameMenu()
 {
 	immutable int max_name_length = 32;
 	// XXX: Perhaps this could be optimized.
-	immutable ActorStat[term_height] left_stats = [
-		ActorStat.none, // 0.
-		ActorStat.none, // 1.
-		ActorStat.none, // 2.
-		ActorStat.none, // 3.
-		ActorStat.strength, // 4.
-		ActorStat.dexterity, // 5.
-		ActorStat.agility, // 6.
-		ActorStat.endurance, // 7.
-		ActorStat.reflex, // 8.
-		ActorStat.observantness, // 9.
-		ActorStat.intelligence, // 10.
-		ActorStat.none, // 11.
-		ActorStat.none, // 12.
-		ActorStat.none, // 13.
-		ActorStat.none, // 14.
-		ActorStat.none, // 15.
-		ActorStat.none, // 16.
-		ActorStat.none, // 17.
-		ActorStat.none, // 18.
-		ActorStat.none, // 19.
-		ActorStat.none, // 20.
-		ActorStat.none, // 21.
-		ActorStat.none, // 22.
-		ActorStat.none, // 23.
+	immutable Stat[term_height] left_stats = [
+		Stat.none, // 0.
+		Stat.none, // 1.
+		Stat.none, // 2.
+		Stat.none, // 3.
+		Stat.strength, // 4.
+		Stat.dexterity, // 5.
+		Stat.agility, // 6.
+		Stat.endurance, // 7.
+		Stat.reflex, // 8.
+		Stat.observantness, // 9.
+		Stat.intelligence, // 10.
+		Stat.none, // 11.
+		Stat.none, // 12.
+		Stat.none, // 13.
+		Stat.none, // 14.
+		Stat.none, // 15.
+		Stat.none, // 16.
+		Stat.none, // 17.
+		Stat.none, // 18.
+		Stat.none, // 19.
+		Stat.none, // 20.
+		Stat.none, // 21.
+		Stat.none, // 22.
+		Stat.none, // 23.
 	];
-	immutable ActorStat[term_height] right_stats = [
-		ActorStat.none, // 0.
-		ActorStat.none, // 1.
-		ActorStat.none, // 2.
-		ActorStat.none, // 3.
-		ActorStat.constructing, // 4.
-		ActorStat.repairing, // 5.
-		ActorStat.modding, // 6.
-		ActorStat.hacking, // 7.
-		ActorStat.none, // 8.
-		ActorStat.striking, // 9.
-		ActorStat.aiming, // 10.
-		ActorStat.extrapolating, // 11.
-		ActorStat.throwing, // 12.
-		ActorStat.dodging, // 13.
-		ActorStat.none, // 14.
-		ActorStat.ballistics, // 15.
-		ActorStat.explosives, // 16.
-		ActorStat.lasers, // 17.
-		ActorStat.plasma, // 18.
-		ActorStat.electromagnetism, // 19.
-		ActorStat.computers, // 20.
-		ActorStat.none, // 21.
-		ActorStat.none, // 22.
-		ActorStat.none, // 23.
+	immutable Stat[term_height] right_stats = [
+		Stat.none, // 0.
+		Stat.none, // 1.
+		Stat.none, // 2.
+		Stat.none, // 3.
+		Stat.constructing, // 4.
+		Stat.repairing, // 5.
+		Stat.modding, // 6.
+		Stat.hacking, // 7.
+		Stat.none, // 8.
+		Stat.striking, // 9.
+		Stat.aiming, // 10.
+		Stat.extrapolating, // 11.
+		Stat.throwing, // 12.
+		Stat.dodging, // 13.
+		Stat.none, // 14.
+		Stat.ballistics, // 15.
+		Stat.explosives, // 16.
+		Stat.lasers, // 17.
+		Stat.plasma, // 18.
+		Stat.electromagnetism, // 19.
+		Stat.computers, // 20.
+		Stat.none, // 21.
+		Stat.none, // 22.
+		Stat.none, // 23.
 	];
 	string name = "";
-	//ActorStats stats = new ActorStats;
+	//Stats stats = new Stats;
 	Key key = Key.none;
 	int pos = 4;
 	int attribute_points_num = 3;
@@ -104,15 +106,15 @@ bool newGameMenu()
 
 	do {
 		if (key == Key.digit_4) {
-			ActorStat stat = is_right_side?
+			Stat stat = is_right_side?
 				right_stats[pos] : left_stats[pos];
-			newGameMenuDecrementStat(player.stats, stat,
+			newGameMenuDecrementStat(player, stat,
 				attribute_points_num, skill_points_num,
 				knowledge_points_num);
 		} else if (key == Key.digit_6) {
-			ActorStat stat = is_right_side?
+			Stat stat = is_right_side?
 				right_stats[pos] : left_stats[pos];
-			newGameMenuIncrementStat(player.stats, stat,
+			newGameMenuIncrementStat(player, stat,
 				attribute_points_num, skill_points_num,
 				knowledge_points_num);
 		} else if ((key >= Key.a && key <= Key.Z) || key == Key.space) {
@@ -124,29 +126,30 @@ bool newGameMenu()
 				name = name[0..$-1];
 			}
 		}
-		drawNewGameMenu(name, player.stats, pos,
+		drawNewGameMenu(name, player, pos,
 			attribute_points_num, skill_points_num, knowledge_points_num);
 		string[term_height] left_strs, right_strs;
 		for (int i = 0; i < term_height; ++i) {
-			left_strs[i] = (left_stats[i] == ActorStat.none)?
+			left_strs[i] = (left_stats[i] == Stat.none)?
 				"" : "  "~player.stats.toString(left_stats[i]);
-			right_strs[i] = (right_stats[i] == ActorStat.none)?
+			right_strs[i] = (right_stats[i] == Stat.none)?
 				"" : "  "~player.stats.toString(right_stats[i]);
 		}
 		dualListNonblocking(left_strs, right_strs, key, pos, is_right_side);
 		key = term.readKey();
-	} while (key != Key.enter && key != Key.escape);
+	} while ((key != Key.enter || name == "") && key != Key.escape);
 
 	if (key == Key.enter) {
 		Map map = new Map(100, 100);
 		LevelGenerator generator = new LevelGenerator(map);
-		generator.genAaRectRooms(AaRect(1, 1, 99, 99), 500, 10);
-		generator.genNarrowAaRoomCorridors(AaRect(1, 1, 99, 99), 250, 1, 5, 10);
+		generator.genNarrowCorridorsAndAaRectRooms();
 
 		main_game = new Game(map);
 		// TODO: Create a separate routine for spawning the player.
-		map.spawn(player, generator.floors[0]);
 		main_game.player = player;
+		main_game.player.player_name = name;
+		map.spawn(player, generator.floors[0]);
+		map.spawn(new LightsamuraiAiActor, map.zones[2][map.zones[2].length-1]);
 
 		main_game.centerizeCamera(main_game.player.x, main_game.player.y);
 		main_game.run();
@@ -155,7 +158,7 @@ bool newGameMenu()
 	return true;
 }
 
-void drawNewGameMenu(string name, ActorStats stats, int pos,
+void drawNewGameMenu(string name, PlayerActor player, int pos,
 	int attribute_points_num, int skill_points_num, int knowledge_points_num)
 {
 	term.clear();
@@ -177,29 +180,29 @@ void drawNewGameMenu(string name, ActorStats stats, int pos,
 	term.write(dual_list_right_x, 14, " Knowledge:", Color.cyan);
 }
 
-void newGameMenuIncrementStat(ref ActorStats stats, ActorStat stat,
+void newGameMenuIncrementStat(PlayerActor player, Stat stat,
 	ref int attribute_points_num,
 	ref int skill_points_num,
 	ref int knowledge_points_num)
 {
-	if (stat >= ActorStat.attributes_min
-	&& stat <= ActorStat.attributes_max) {
+	if (stat >= Stat.attributes_min
+	&& stat <= Stat.attributes_max) {
 		if (attribute_points_num > 0
-		&& stats.trySet(stat, stats[stat]+1)) {
+		&& player.stats.trySet(stat, player.stats[stat]+1)) {
 			--attribute_points_num;
 		}
-	} else if (((stat >= ActorStat.technical_skills_min
-	&& stat <= ActorStat.technical_skills_max)
-	|| (stat >= ActorStat.combat_skills_min
-	&& stat <= ActorStat.combat_skills_max))) {
+	} else if (((stat >= Stat.technical_skills_min
+	&& stat <= Stat.technical_skills_max)
+	|| (stat >= Stat.combat_skills_min
+	&& stat <= Stat.combat_skills_max))) {
 		if (skill_points_num > 0
-		&& stats.trySet(stat, stats[stat]+1)) {
+		&& player.stats.trySet(stat, player.stats[stat]+1)) {
 			--skill_points_num;
 		}
-	} else if (stat >= ActorStat.knowledges_min
-	&& stat <= ActorStat.knowledges_max) {
+	} else if (stat >= Stat.knowledges_min
+	&& stat <= Stat.knowledges_max) {
 		if (knowledge_points_num > 0
-		&& stats.trySet(stat, stats[stat]+1)) {
+		&& player.stats.trySet(stat, player.stats[stat]+1)) {
 			--knowledge_points_num;
 		}
 	} else {
@@ -207,22 +210,22 @@ void newGameMenuIncrementStat(ref ActorStats stats, ActorStat stat,
 	}
 }
 
-void newGameMenuDecrementStat(ref ActorStats stats, ActorStat stat,
+void newGameMenuDecrementStat(PlayerActor player, Stat stat,
 	ref int attribute_points_num,
 	ref int skill_points_num,
 	ref int knowledge_points_num)
 {
-	if (stats.trySet(stat, stats[stat]-1)) {
-		if (stat >= ActorStat.attributes_min
-		&& stat <= ActorStat.attributes_max) {
+	if (player.stats.trySet(stat, player.stats[stat]-1)) {
+		if (stat >= Stat.attributes_min
+		&& stat <= Stat.attributes_max) {
 			++attribute_points_num;
-		} else if ((stat >= ActorStat.technical_skills_min
-		&& stat <= ActorStat.technical_skills_max)
-		|| (stat >= ActorStat.combat_skills_min
-		&& stat <= ActorStat.combat_skills_max)) {
+		} else if ((stat >= Stat.technical_skills_min
+		&& stat <= Stat.technical_skills_max)
+		|| (stat >= Stat.combat_skills_min
+		&& stat <= Stat.combat_skills_max)) {
 			++skill_points_num;
-		} else if (stat >= ActorStat.knowledges_min
-		&& stat <= ActorStat.knowledges_max) {
+		} else if (stat >= Stat.knowledges_min
+		&& stat <= Stat.knowledges_max) {
 			++knowledge_points_num;
 		} else {
 			assert(false);
@@ -356,6 +359,7 @@ void dualListNonblocking(string[term_height] left_strs,
 	drawDualList(left_strs, right_strs, pos, is_right_side);
 }
 
+// XXX: Why `immutable`, not `enum`?
 immutable int dual_list_left_x = 0;
 immutable int dual_list_right_x = 40;
 

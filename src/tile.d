@@ -6,7 +6,7 @@ import item;
 import std.container;
 
 // XXX: Perhaps place it in `map.d`?
-bool debug_is_all_visible = false;
+immutable bool debug_is_all_visible = false;
 
 class Tile
 {
@@ -14,12 +14,14 @@ class Tile
 	@noser Actor actor;
 	Array!Item items;
 
+	// 0 is none.
+	int zone = 0;
 	private Symbol last_visible_symbol = Symbol(' ');
 	private bool _is_visible = false;
 
-	@property abstract bool is_walkable();
-	@property abstract bool is_transparent();
-	@property protected abstract Symbol symbol();
+	@property abstract bool is_walkable() const;
+	@property abstract bool is_transparent() const;
+	@property protected abstract Symbol symbol() const;
 	@property bool is_default() { return false; }
 	@property bool is_static() { return true; }
 
@@ -85,14 +87,20 @@ class Tile
 		}*/
 		term.setSymbol(x, y, visible_symbol);
 	}
+
+	// Return false if cannot be opened/closed for some reason
+	// i.e. not a door or is jammed.
+	bool open() { return false; }
+	bool close() { return false; }
 }
 
 class FloorTile : Tile
 {
 	mixin InheritedSerializable;
-	@property override Symbol symbol() { return Symbol('.', Color.white); }
-	@property override bool is_walkable() { return true; }
-	@property override bool is_transparent() { return true; }
+	@property override Symbol symbol() const
+		{ return Symbol('.', Color.white); }
+	@property override bool is_walkable() const { return true; }
+	@property override bool is_transparent() const { return true; }
 	this() { super(); }
 	this(Serializer serializer) { super(serializer); }
 }
@@ -100,9 +108,10 @@ class FloorTile : Tile
 class WallTile : Tile
 {
 	mixin InheritedSerializable;
-	@property override Symbol symbol() { return Symbol('#', Color.white); }
-	@property override bool is_walkable() { return false; }
-	@property override bool is_transparent() { return false; }
+	@property override Symbol symbol() const
+		{ return Symbol('#', Color.white); }
+	@property override bool is_walkable() const { return false; }
+	@property override bool is_transparent() const { return false; }
 	this() { super(); }
 	this(Serializer serializer) { super(serializer); }
 }
@@ -110,7 +119,7 @@ class WallTile : Tile
 class DefaultWallTile : WallTile
 {
 	mixin InheritedSerializable;
-	@property override bool is_default() { return true; }
+	@property override bool is_default() const { return true; }
 	this() { super(); }
 	this(Serializer serializer) { super(serializer); }
 }
@@ -119,29 +128,66 @@ class MarkerFloorTile : FloorTile
 {
 	mixin InheritedSerializable;
 	Symbol _symbol;
-	@property override Symbol symbol() { return _symbol; }
+	@property override Symbol symbol() const { return _symbol; }
 	this(Color color) { super(); _symbol = Symbol('.', color, true); }
 	this(Serializer serializer) { super(serializer); }
 }
 
-class HDoorTile : Tile
+class DoorTile : Tile
+{
+	protected bool is_open = false;
+	@property override bool is_static() const { return false; }
+	@property override bool is_walkable() const { return is_open; }
+	@property override bool is_transparent() const { return is_open; }
+	this() { super(); }
+	this(bool is_open) { this(); this.is_open = is_open; }
+	this(Serializer serializer) { super(serializer); }
+	override bool open()
+	{
+		if (is_open) {
+			return false;
+		}
+		is_open = true;
+		return true;
+	}
+	override bool close()
+	{
+		if (!is_open) {
+			return false;
+		}
+		is_open = false;
+		return true;
+	}
+}
+
+class HDoorTile : DoorTile
 {
 	mixin InheritedSerializable;
-	@property override Symbol symbol() { return Symbol('+', Color.yellow); }
-	@property override bool is_static() { return false; }
-	@property override bool is_walkable() { return /*false;*/ true; }
-	@property override bool is_transparent() { return false; }
+	@property override Symbol symbol() const
+	{
+		if (is_open) {
+			return Symbol('-', Color.yellow);
+		} else {
+			return Symbol('+', Color.yellow);
+		}
+	}
 	this() { super(); }
+	this(bool is_open) { this(); this.is_open = is_open; }
 	this(Serializer serializer) { super(serializer); }
 }
 
-class VDoorTile : Tile
+class VDoorTile : DoorTile
 {
 	mixin InheritedSerializable;
-	@property override Symbol symbol() { return Symbol('+', Color.yellow); }
-	@property override bool is_static() { return false; }
-	@property override bool is_walkable() { return /*false;*/ true; }
-	@property override bool is_transparent() { return false; }
+	@property override Symbol symbol() const
+	{
+		if (is_open) {
+			return Symbol('|', Color.yellow);
+		} else {
+			return Symbol('+', Color.yellow);
+		}
+	}
 	this() { super(); }
+	this(bool is_open) { this(); this.is_open = is_open; }
 	this(Serializer serializer) { super(serializer); }
 }

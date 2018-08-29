@@ -4,6 +4,7 @@ import ser;
 import term;
 import ai;
 import item;
+import body;
 
 class LightsamuraiAiActor : AiActor
 {
@@ -11,6 +12,8 @@ class LightsamuraiAiActor : AiActor
 
 	this()
 	{
+		body_ = new HumanFleshyBody;
+		super();
 		items.insertBack(new LightkatanaItem);
 		weapon_index = items.length-1;
 		//actWield(items.length-1);

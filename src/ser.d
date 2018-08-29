@@ -75,6 +75,8 @@ mixin template Serializable()
 		serializer.save(type, "type");
 		foreach (e; __traits(allMembers, typeof(this))) {
 			static if (e != "Monitor"
+			&& e != "opUnary"
+			&& e != "opBinary"
 			&& !hasUDA!(__traits(getMember, typeof(this), e), noser)
 			&& isMutable!(typeof(__traits(getMember, this, e)))
 			&& !isSomeFunction!(__traits(getMember, typeof(this), e))
@@ -90,6 +92,8 @@ mixin template Serializable()
 		beforeload(serializer);
 		foreach (e; __traits(allMembers, typeof(this))) {
 			static if (e != "Monitor"
+			&& e != "opUnary"
+			&& e != "opBinary"
 			&& !hasUDA!(__traits(getMember, typeof(this), e), noser)
 			&& isMutable!(typeof(__traits(getMember, this, e)))
 			&& !isSomeFunction!(__traits(getMember, typeof(this), e))
@@ -252,7 +256,9 @@ class Serializer
 		++stack.length;
 		//(*stack[$-1])[key] = ValType.make(this);
 		stack[$-1] = &((*stack[$-2])[key]);
-		ValType val = ValType.make(this);
+		// XXX: This cast may cause problems.
+		ValType val = cast(ValType)ValType.make(this);
+
 		val.load(this);
 		--stack.length;
 		return val;

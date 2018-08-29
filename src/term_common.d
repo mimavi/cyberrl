@@ -1,3 +1,5 @@
+// TODO: Encapsulate this module and the related modules.
+
 import std.format;
 import util;
 import term;
@@ -48,16 +50,16 @@ struct Symbol
 	Color bg_color = Color.black;
 	bool is_bright = false;
 
-	this(Serializer serializer) {}
-	void beforesave(Serializer serializer) {}
-	void beforeload(Serializer serializer) {}
-	void aftersave(Serializer serializer) {}
-	void afterload(Serializer serializer) {}
+	this(Serializer serializer) pure {}
+	void beforesave(Serializer serializer) pure {}
+	void beforeload(Serializer serializer) pure {}
+	void aftersave(Serializer serializer) pure {}
+	void afterload(Serializer serializer) pure {}
 
 	this(char chr,
 		Color color = Color.white,
 		Color bg_color = Color.black,
-		bool is_bright = false)
+		bool is_bright = false) pure
 	{
 		this.chr = chr;
 		this.color = color;
@@ -65,7 +67,7 @@ struct Symbol
 		this.is_bright = is_bright;
 	}
 
-	this(char chr, Color color, bool is_bright)
+	this(char chr, Color color, bool is_bright) pure
 	{
 		this.chr = chr;
 		this.color = color;
