@@ -268,8 +268,10 @@ Key readKey()
 		if (event.type == SDL_QUIT) {
 			exit(EXIT_SUCCESS);
 		}
-	// Repeat until a valid key is pressed.
-	// Make sure that keycode is a valid key for `keycode_to_key`.
+		else if (event.type == SDL_WINDOWEVENT
+		&& event.window.event == SDL_WINDOWEVENT_EXPOSED) refresh();
+		// Repeat until a valid key is pressed.
+		// Make sure that keycode is a valid key for `keycode_to_key`.
 	} while(event.type != SDL_KEYDOWN
 	|| (event.key.keysym.sym in keycode_to_key) is null);
 	// If shift is held while a key valid for `alnum_keycode_to_shifted_key`
