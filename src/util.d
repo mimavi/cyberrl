@@ -242,7 +242,7 @@ int getSplitAtSpace(string str, int width)
 {
 	//if (str[width-1] != ' ' && str[width] != ' ') {
 	if (str.length < width) {
-		return str.length;
+		return cast(int)str.length;
 	}
 	if (str[width-1] == ' ') {
 		return width-1;
