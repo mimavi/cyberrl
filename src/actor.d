@@ -90,14 +90,6 @@ class Actor
 	{
 		return stats[Stat.strength]
 			+ stats[Stat.striking];
-			//+ stats[Stat
-			/*scaledSigmoid(weapon.blunt_hit_damage,
-			strength_hit_damage_weight*stats[Stat.strength]
-			+ striking_hit_damage_weight*stats[Stat.striking]
-			+ scaledSigmoid(weapon.sharp_hit_damage,
-			+ strength_hit_damage_weight*stats[Stat.strength]
-			+ striking_hit_damage_weight*stats[Stat.striking]
-			+ dexterity_hit_damage_weight*stats[Stat.dexterity])*/
 	}
 
 	@property int x() const pure { return _x; }
@@ -248,8 +240,10 @@ class Actor
 			ap -= base_ap_cost
 				- dexterity_ap_weight*stats[Stat.dexterity]
 				- hitting_ap_weight*stats[Stat.striking];
-			map.game.sendVisibleEventMsg(target.x, target.y,
-				format("%s hits thin air.", name), Color.red, true);
+			/*map.game.sendVisibleEventMsg(target.x, target.y,
+				format("%s hits thin air.", name), Color.red, true);*/
+			map.game.sendVisibleEventMsg(target.x, target.y, Color.red, true,
+				"%1$s hits thin air", name);
 			return true;
 		}
 		/*if (sigmoidChance(
@@ -296,15 +290,16 @@ class Actor
 				target.body_.dealStrike(target.stats, part, strike);
 				
 				map.game.sendVisibleEventMsg(target.x, target.y,
-					format("%s hits %s.", name, target.name),
-					Color.red, true);
+					Color.red, true, "%1$s hits %2$s", name, target.name);
 				return true;
 			}
 			// For now, you cannot hit without a weapon.
 			// TODO: Change this.
 		}
+		//map.game.sendVisibleEventMsg(target.x, target.y,
+			//format("%s misses %s.", name, target.name), Color.red, true);
 		map.game.sendVisibleEventMsg(target.x, target.y,
-			format("%s misses %s.", name, target.name), Color.red, true);
+			Color.red, true, "%1$s misses %2$s", name, target.name);
 		return true;
 	}
 

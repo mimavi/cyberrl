@@ -267,6 +267,12 @@ Key readKey()
 		}
 		if (event.type == SDL_QUIT) {
 			exit(EXIT_SUCCESS);
+		} else if (event.type == SDL_WINDOWEVENT) {
+			/*if (event.window.event == SDL_WINDOWEVENT_SHOWN
+			|| event.window.event == SDL_WINDOWEVENT_EXPOSED
+			|| event.window.event == SDL_WINDOWEVENT_MOVED
+			|| event.window.*/
+			refresh();
 		}
 	// Repeat until a valid key is pressed.
 	// Make sure that keycode is a valid key for `keycode_to_key`.

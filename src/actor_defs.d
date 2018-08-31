@@ -27,9 +27,11 @@ class LightsamuraiAiActor : AiActor
 	override bool actWield(int index)
 	{
 		if (super.actWield(index)) {
-			map.game.sendVisibleEventMsg(x, y,
-				format("%s wields %s.", name, items[index].name),
-				Color.yellow, false);
+			//map.game.sendVisibleEventMsg(x, y,
+				//format("%s wields %s.", name, items[index].name),
+				//Color.yellow, false);
+			map.game.sendVisibleEventMsg(x, y, Color.yellow, false,
+				"%s wields %s.", name, items[index].name);
 			return true;
 		}
 		return false;

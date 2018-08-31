@@ -125,7 +125,7 @@ class PlayerActor : Actor
 			body_part_text_width);
 		term.write(body_parts_text_x+2*body_part_text_width,
 			body_parts_text_y+1, " right leg",
-			drawBodyStatusDamageArgs(HumanFleshyBodyPart.right_arm).expand,
+			drawBodyStatusDamageArgs(HumanFleshyBodyPart.right_leg).expand,
 			body_part_text_width);
 	}
 
@@ -147,6 +147,16 @@ class PlayerActor : Actor
 		} else {
 			return tuple(Color.black, true);
 		}
+	}
+
+	override bool actOpen(int x, int y)
+	{
+		bool result = super.actOpen(x, y);
+		if (result) {
+			map.game.sendVisibleEventMsg(x, y, Color.yellow, false,
+				"you open the door");
+		}
+		return result;
 	}
 
 	/*private bool drawBodyStatusDamageToBright(int damage, int max_damage)

@@ -1,9 +1,11 @@
-// TODO: Encapsulate this module and the related modules.
-
+import std.range.primitives;
 import std.format;
 import util;
 import term;
 import ser;
+
+// TODO: Use input contracts in this module.
+// TODO: Use `uint` instead of `int` for terminal coords.
 
 immutable int term_width = 80;
 immutable int term_height = 24;
@@ -76,6 +78,32 @@ struct Symbol
 	}
 }
 
+/*struct TermWriter
+{
+	int x, y;
+	Symbol[] symbols;
+
+	this(int x, int y)
+	{
+		this.x = x;
+		this.y = y;
+	}
+
+	void put(char chr)
+	{
+		++symbols.length;
+
+		//symbols[$-1] = symbol;
+		/*term.setSymbol(x, y, symbol);
+		++x;
+		if (x >= start_x+width) {
+			x = start_x;
+			++y;
+		}*/
+	//}
+//}
+//static assert(isOutputRange!(TermWriter, char));
+
 class TermException : Exception
 {
 	this(string msg, string file = __FILE__, size_t line = __LINE__)
@@ -145,6 +173,33 @@ void write(int x, int y, string str, Color color, bool is_bright, int width)
 void write(int x, int y, string str, Color color, bool is_bright)
 {
 	write(x, y, str, color, Color.black, is_bright);
+}
+
+// TODO: Format string as template argument.
+
+void writef(A...)(int x, int y, string fmt, Color color, Color bg_color,
+	bool is_bright, int width, A args)
+{
+	auto str = format(fmt, args);
+	write(x, y, str, color, bg_color, is_bright, width);
+}
+
+void writef(A...)(int x, int y, string fmt, Color color, bool is_bright,
+	int width, A args)
+{
+	writef(x, y, fmt, color, Color.black, is_bright, width, args);
+}
+
+void writef(A...)(int x, int y, string fmt, Color color, Color bg_color,
+	int width, A args)
+{
+	writef(x, y, fmt, color, bg_color, false, width, args);
+}
+
+void writef(A...)(int x, int y, string fmt, Color color,
+	int width, A args)
+{
+	writef(x, y, fmt, color, Color.black, false, width, args);
 }
 
 void clear()
