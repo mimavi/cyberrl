@@ -20,8 +20,8 @@ struct Strike
 	int[DamageType.max+1] damages;
 	alias damages this;
 
-	/*this(int[DamageType.max+1] damages) pure
-	{
+	/*this(int[DamageType.max+1] damages) /*pure*/
+	/*{
 		this.damages = damages;
 	}*/
 }
@@ -33,14 +33,20 @@ class Body
 
 	enum max_resistance = 4;
 
-	@property int dexterity_mod() const pure { return 0; }
-	@property int agility_mod() const pure { return 0; }
+	@property Strike base_max_strike() const /*pure*/
+	{
+		Strike strike;
+		strike[DamageType.blunt] = 10;
+		return strike;
+	}
+	@property int dexterity_mod() const /*pure*/ { return 0; }
+	@property int agility_mod() const /*pure*/ { return 0; }
 
-	this() pure {}
-	this(Serializer serializer) pure {}
+	this() /*pure*/ {}
+	this(Serializer serializer) /*pure*/ {}
 
 	//void update(Stats stats) {}
-	void dealStrike(Stats stats, int part, Strike strike) pure
+	void dealStrike(Stats stats, int part, Strike strike) /*pure*/
 	{
 		foreach(int i, e; strike) {
 			int resistance = getResistance(stats, cast(DamageType)i, part);
@@ -49,16 +55,18 @@ class Body
 		}
 	}
 
-	void update() pure {};
+	void update() /*pure*/ {};
 
-	protected abstract void dealDamage(Stats stats, int part, int damage) pure
+	protected abstract void dealDamage(Stats stats, int part, int damage) /*pure*/
 		out { assert(getDamage(part) <= getMaxDamage(stats, part)); }
 		do {}
 
-	abstract int getDamage(int part) const pure;
-	abstract int getMaxDamage(Stats stats, int part) const pure;
+	abstract int getDamage(int part) const /*pure*/;
+	abstract int getMaxDamage(Stats stats, int part) const /*pure*/;
 	abstract int getResistance(Stats stats, DamageType damage_type, int part)
-		const pure;
+		const /*pure*/;
+	abstract string getPartName(int part) const /*pure*/;
+	abstract string getDamageString(Stats stats, uint part) const /*pure*/;
 }
 
 class FleshyBody : Body
@@ -69,21 +77,21 @@ class FleshyBody : Body
 
 	int _lost_blood;
 
-	@property int lost_blood() const pure { return _lost_blood; }
-	@property abstract int total_bleeding() const pure;
-	@property abstract int total_pain() const pure;
+	@property int lost_blood() const /*pure*/ { return _lost_blood; }
+	@property abstract int total_bleeding() const /*pure*/;
+	@property abstract int total_pain() const /*pure*/;
 
-	this() pure {}
-	this(Serializer serializer) pure { super(serializer); }
+	this() /*pure*/ {}
+	this(Serializer serializer) /*pure*/ { super(serializer); }
 
-	override void update() pure
+	override void update() /*pure*/
 	{
 		_lost_blood += total_bleeding;
 	}
 
-	abstract int getMaxLostBlood(Stats stats) const pure;
-	abstract int getBleeding(int part) const pure;
-	abstract int getPain(int part) const pure;
+	abstract int getMaxLostBlood(Stats stats) const /*pure*/;
+	abstract int getBleeding(int part) const /*pure*/;
+	abstract int getPain(int part) const /*pure*/;
 }
 
 class HumanFleshyBody : FleshyBody
@@ -94,7 +102,7 @@ class HumanFleshyBody : FleshyBody
 	private int[HumanFleshyBodyPart.max+1] bleeding;
 	private int[HumanFleshyBodyPart.max+1] pain;
 
-	@property override int total_bleeding() const pure
+	@property override int total_bleeding() const /*pure*/
 	{
 		int sum;
 		foreach (e; bleeding) {
@@ -103,16 +111,16 @@ class HumanFleshyBody : FleshyBody
 		return sum;
 	}
 
-	@property override int total_pain() const pure
+	@property override int total_pain() const /*pure*/
 	{
 		// TODO: Add pain.
 		return 0;
 	}
 
-	this() pure {}
-	this(Serializer serializer) pure { super(serializer); }
+	this() /*pure*/ {}
+	this(Serializer serializer) /*pure*/ { super(serializer); }
 
-	override void dealStrike(Stats stats, int part, Strike base_damage) pure
+	override void dealStrike(Stats stats, int part, Strike base_damage) /*pure*/
 	{
 		super.dealStrike(stats, part, base_damage);
 		bleeding[cast(HumanFleshyBodyPart)part]
@@ -120,7 +128,7 @@ class HumanFleshyBody : FleshyBody
 			/ bleeding_from_sharp_divisor;
 	}
 
-	protected override void dealDamage(Stats stats, int part, int damage) pure
+	protected override void dealDamage(Stats stats, int part, int damage) /*pure*/
 	{
 		this.damage[cast(HumanFleshyBodyPart)part] += damage;
 		this.damage[cast(HumanFleshyBodyPart)part] =
@@ -128,12 +136,12 @@ class HumanFleshyBody : FleshyBody
 			getMaxDamage(stats, part));
 	}
 
-	override int getDamage(int part) const pure
+	override int getDamage(int part) const /*pure*/
 	{
 		return damage[cast(HumanFleshyBodyPart)part];
 	}
 
-	override int getMaxDamage(Stats stats, int part) const pure
+	override int getMaxDamage(Stats stats, int part) const /*pure*/
 	{
 		final switch(cast(HumanFleshyBodyPart)part) {
 			case HumanFleshyBodyPart.head:
@@ -152,7 +160,7 @@ class HumanFleshyBody : FleshyBody
 	}
 
 	override int getResistance(Stats stats, DamageType damage_type, int part) 
-		const pure
+		const /*pure*/
 	{
 		if (damage_type == DamageType.electromagnetic) {
 			return 3;
@@ -161,16 +169,45 @@ class HumanFleshyBody : FleshyBody
 		}
 	}
 
-	override int getMaxLostBlood(Stats stats) const pure { return 1000; }
+	override int getMaxLostBlood(Stats stats) const /*pure*/ { return 1000; }
 
-	override int getBleeding(int part) const pure
+	override int getBleeding(int part) const /*pure*/
 	{
 		return bleeding[cast(HumanFleshyBodyPart)part];
 	}
 
-	override int getPain(int part) const pure
+	override int getPain(int part) const /*pure*/
 	{
 		// TODO: Add pain.
 		return 0;
+	}
+
+	override string getPartName(int part) const /*pure*/
+	{
+		final switch(cast(HumanFleshyBodyPart)part) {
+			case HumanFleshyBodyPart.head: return "head";
+			case HumanFleshyBodyPart.torso: return "torso";
+			case HumanFleshyBodyPart.left_arm: return "left arm";
+			case HumanFleshyBodyPart.right_arm: return "right arm";
+			case HumanFleshyBodyPart.left_leg: return "left leg";
+			case HumanFleshyBodyPart.right_leg: return "right leg";
+		}
+	}
+	
+	// TODO: Return bleeding info.
+	override string getDamageString(Stats stats, uint part) const /*pure*/
+	{
+		uint percentage = 100-getDamage(part)*100/getMaxDamage(stats, part);
+		if (percentage == 100) {
+			return "unwounded";
+		} else if (percentage >= 70) {
+			return "lightly wounded";
+		} else if (percentage >= 30) {
+			return "moderately wounded";
+		} else if (percentage > 0) {
+			return "heavily wounded";
+		} else {
+			return "collapsed";
+		}
 	}
 }

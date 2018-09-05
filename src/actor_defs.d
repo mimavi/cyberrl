@@ -20,9 +20,9 @@ class LightsamuraiAiActor : AiActor
 	}
 	this(Serializer serializer) { this(); }
 
-	@property override Symbol symbol()
+	@property override Symbol symbol() const /*pure*/
 		{ return Symbol('@', Color.magenta, true); }
-	@property override string name() { return "lightsamurai"; }
+	@property override string name() const /*pure*/ { return "lightsamurai"; }
 
 	override bool actWield(int index)
 	{

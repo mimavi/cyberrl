@@ -7,10 +7,10 @@ import derelict.sdl2.sdl;
 
 public import term_common;
 
-private immutable int symbol_width = 9;
-private immutable int symbol_height = 16;
-private immutable int codepage_width = 16;
-private immutable int codepage_height = 16;
+private immutable uint symbol_width = 9;
+private immutable uint symbol_height = 16;
+private immutable uint codepage_width = 16;
+private immutable uint codepage_height = 16;
 private immutable ubyte[Color.max+1] color_to_r = [
 	Color.black:   0,
 	Color.red:     128,
@@ -295,9 +295,9 @@ Key readKey()
 void refresh()
 {
 	SDL_RenderClear(renderer);
-	for (int i = 0; i < term_width; ++i) {
-		for (int j = 0; j < term_height; ++j) {
-			int index = i+j*term_width;
+	for (uint i = 0; i < term_width; ++i) {
+		for (uint j = 0; j < term_height; ++j) {
+			uint index = i+j*term_width;
 			SDL_Rect bg_rect = {
 				x: (219%codepage_width)*symbol_width,
 				y: (219/codepage_width)*symbol_height,
@@ -338,12 +338,12 @@ void refresh()
 	SDL_RenderPresent(renderer);
 }
 
-void setSymbol(int x, int y, Symbol symbol)
+void setSymbol(uint x, uint y, Symbol symbol)
 {
 	symbol_array[x+y*term_width] = symbol;
 }
 
-Symbol getSymbol(int x, int y)
+Symbol getSymbol(uint x, uint y)
 {
 	return symbol_array[x+y*term_width];
 }

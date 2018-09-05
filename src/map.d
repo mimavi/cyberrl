@@ -58,7 +58,8 @@ class Map
 		}
 	}
 
-	ref Tile getTile(int x, int y)
+	// XXX: Perhaps this function will be better as `const`?
+	ref Tile getTile(int x, int y) /*pure*/
 	{
 		if (x < 0 || y < 0 || x >= _width || y >= _width) {
 			tmp = new WallTile;

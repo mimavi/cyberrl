@@ -19,13 +19,13 @@ class Tile
 	private Symbol last_visible_symbol = Symbol(' ');
 	private bool _is_visible = false;
 
-	@property abstract bool is_walkable() const;
-	@property abstract bool is_transparent() const;
-	@property protected abstract Symbol symbol() const;
-	@property bool is_default() { return false; }
-	@property bool is_static() { return true; }
+	@property abstract bool is_walkable() /*pure*/ const;
+	@property abstract bool is_transparent() /*pure*/ const;
+	@property protected abstract Symbol symbol() /*pure*/ const;
+	@property bool is_default() /*pure*/ const { return false; }
+	@property bool is_static() /*pure*/ const { return true; }
 
-	@property void is_visible(bool val)
+	@property void is_visible(bool val) /*pure*/
 	{
 		_is_visible = val;
 		if (val) {
@@ -33,7 +33,7 @@ class Tile
 		}
 	}
 
-	@property bool is_visible()
+	@property bool is_visible() /*pure*/ const
 	{
 		if (debug_is_all_visible) {
 			return true;
@@ -41,7 +41,7 @@ class Tile
 		return _is_visible;
 	}
 
-	@property Symbol visible_symbol()
+	@property Symbol visible_symbol() /*pure*/ const
 	{
 		if (!is_visible) {
 			Symbol result = last_visible_symbol;
@@ -63,11 +63,11 @@ class Tile
 		}
 	}
 
-	this()
+	this() /*pure*/
 	{
 		items = Array!Item();
 	}
-	this(Serializer) { this(); }
+	this(Serializer) /*pure*/ { this(); }
 	void beforesave(Serializer serializer) {}
 	void beforeload(Serializer serializer) {}
 	void aftersave(Serializer serializer) {}
@@ -90,8 +90,8 @@ class Tile
 
 	// Return false if cannot be opened/closed for some reason
 	// i.e. not a door or is jammed.
-	bool open() { return false; }
-	bool close() { return false; }
+	bool open() /*pure*/ { return false; }
+	bool close() /*pure*/ { return false; }
 }
 
 class FloorTile : Tile
@@ -101,8 +101,8 @@ class FloorTile : Tile
 		{ return Symbol('.', Color.white); }
 	@property override bool is_walkable() const { return true; }
 	@property override bool is_transparent() const { return true; }
-	this() { super(); }
-	this(Serializer serializer) { super(serializer); }
+	this() /*pure*/ { super(); }
+	this(Serializer serializer) /*pure*/ { super(serializer); }
 }
 
 class WallTile : Tile
@@ -112,16 +112,16 @@ class WallTile : Tile
 		{ return Symbol('#', Color.white); }
 	@property override bool is_walkable() const { return false; }
 	@property override bool is_transparent() const { return false; }
-	this() { super(); }
-	this(Serializer serializer) { super(serializer); }
+	this() /*pure*/ { super(); }
+	this(Serializer serializer) /*pure*/ { super(serializer); }
 }
 
 class DefaultWallTile : WallTile
 {
 	mixin InheritedSerializable;
 	@property override bool is_default() const { return true; }
-	this() { super(); }
-	this(Serializer serializer) { super(serializer); }
+	this() /*pure*/ { super(); }
+	this(Serializer serializer) /*pure*/ { super(serializer); }
 }
 
 class MarkerFloorTile : FloorTile
@@ -129,8 +129,8 @@ class MarkerFloorTile : FloorTile
 	mixin InheritedSerializable;
 	Symbol _symbol;
 	@property override Symbol symbol() const { return _symbol; }
-	this(Color color) { super(); _symbol = Symbol('.', color, true); }
-	this(Serializer serializer) { super(serializer); }
+	this(Color color) /*pure*/ { super(); _symbol = Symbol('.', color, true); }
+	this(Serializer serializer) /*pure*/ { super(serializer); }
 }
 
 class DoorTile : Tile
@@ -139,10 +139,10 @@ class DoorTile : Tile
 	@property override bool is_static() const { return false; }
 	@property override bool is_walkable() const { return is_open; }
 	@property override bool is_transparent() const { return is_open; }
-	this() { super(); }
-	this(bool is_open) { this(); this.is_open = is_open; }
-	this(Serializer serializer) { super(serializer); }
-	override bool open()
+	this() /*pure*/ { super(); }
+	this(bool is_open) /*pure*/ { this(); this.is_open = is_open; }
+	this(Serializer serializer) /*pure*/ { super(serializer); }
+	override bool open() /*pure*/
 	{
 		if (is_open) {
 			return false;
@@ -150,7 +150,7 @@ class DoorTile : Tile
 		is_open = true;
 		return true;
 	}
-	override bool close()
+	override bool close() /*pure*/
 	{
 		if (!is_open) {
 			return false;
@@ -163,7 +163,7 @@ class DoorTile : Tile
 class HDoorTile : DoorTile
 {
 	mixin InheritedSerializable;
-	@property override Symbol symbol() const
+	@property override Symbol symbol() const /*pure*/
 	{
 		if (is_open) {
 			return Symbol('-', Color.yellow);
@@ -171,15 +171,15 @@ class HDoorTile : DoorTile
 			return Symbol('+', Color.yellow);
 		}
 	}
-	this() { super(); }
-	this(bool is_open) { this(); this.is_open = is_open; }
-	this(Serializer serializer) { super(serializer); }
+	this() /*pure*/ { super(); }
+	this(bool is_open) /*pure*/ { this(); this.is_open = is_open; }
+	this(Serializer serializer) /*pure*/ { super(serializer); }
 }
 
 class VDoorTile : DoorTile
 {
 	mixin InheritedSerializable;
-	@property override Symbol symbol() const
+	@property override Symbol symbol() const /*pure*/
 	{
 		if (is_open) {
 			return Symbol('|', Color.yellow);
@@ -187,7 +187,7 @@ class VDoorTile : DoorTile
 			return Symbol('+', Color.yellow);
 		}
 	}
-	this() { super(); }
-	this(bool is_open) { this(); this.is_open = is_open; }
-	this(Serializer serializer) { super(serializer); }
+	this() /*pure*/ { super(); }
+	this(bool is_open) /*pure*/ { this(); this.is_open = is_open; }
+	this(Serializer serializer) /*pure*/ { super(serializer); }
 }

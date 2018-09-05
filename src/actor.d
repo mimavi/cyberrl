@@ -15,6 +15,8 @@ import stat;
 
 immutable bool debug_can_move_anywhere = false;
 
+enum Gender {male, female, neuter}
+
 class Actor
 {
 	invariant(body_ !is null);
@@ -45,15 +47,25 @@ class Actor
 	bool is_despawned = false;
 
 	protected int weapon_index = -1;
-	private int ap = 0;
+	private int ap;
 	private int _x, _y;
+	private Gender gender = Gender.male;
 
 	abstract bool subupdate(); // Return false if `Map.update()` shall return.
-	@property abstract Symbol symbol();
-	@property abstract string name();
+	@property abstract Symbol symbol() const /*pure*/;
+	@property abstract string name() const /*pure*/;
+
+	@property string possesive_pronoun() const /*pure*/
+	{
+		final switch(gender) {
+			case Gender.male: return "his";
+			case Gender.female: return "her";
+			case Gender.neuter: return "its";
+		}
+	}
 
 	// "ap" means "action points". "eff" means "effective".
-	@property Stats stats() const pure { return _stats; }
+	@property Stats stats() const /*pure*/ { return _stats; }
 	@property void stats(Stats stats)
 	{
 		_stats = stats;
@@ -61,13 +73,13 @@ class Actor
 		//body_ = new ActorBody(stats);
 	}
 
-	@property int quickness() const pure { return 0; }
-	@property int eff_quickness() const pure
+	@property int quickness() const /*pure*/ { return 0; }
+	@property int eff_quickness() const /*pure*/
 		{ return quickness + stats[Stat.reflex]; }
-	@property int ap_per_turn() const pure
+	@property int ap_per_turn() const /*pure*/
 		{ return base_ap_per_turn + eff_quickness; }
 
-	@property int hit_chance_bonus() const pure
+	@property int hit_chance_bonus() const /*pure*/
 	{
 		return stats[Stat.dexterity]
 			+ stats[Stat.striking]
@@ -79,21 +91,21 @@ class Actor
 		- dodging_hit_chance_weight*target.stats[Stat.dodging])) {*/
 	}
 
-	@property int evasion_chance_bonus() const pure
+	@property int evasion_chance_bonus() const /*pure*/
 	{
 		return stats[Stat.agility]
 			+ stats[Stat.observantness]
 			+ stats[Stat.dodging];
 	}
 
-	@property int hit_damage_bonus() const pure
+	@property int hit_damage_bonus() const /*pure*/
 	{
 		return stats[Stat.strength]
 			+ stats[Stat.striking];
 	}
 
-	@property int x() const pure { return _x; }
-	@property int y() const pure { return _y; }
+	@property int x() const /*pure*/ { return _x; }
+	@property int y() const /*pure*/ { return _y; }
 
 	this(Stats stats = Stats())
 	{
@@ -125,7 +137,7 @@ class Actor
 		term.setSymbol(x, y, symbol);
 	}
 
-	void initPos(int x, int y) 
+	void initPos(int x, int y) /*pure*/
 	{
 		debug writeln(x, " ", y, " ", map.getTile(x, y).zone);
 		map.getTile(x, y).actor = this;
@@ -236,83 +248,99 @@ class Actor
 		in(map !is null)
 	{
 		auto target = map.getTile(x, y).actor;
+
 		if (target is null) {
-			ap -= base_ap_cost
+			/*ap -= base_ap_cost
 				- dexterity_ap_weight*stats[Stat.dexterity]
 				- hitting_ap_weight*stats[Stat.striking];
 			/*map.game.sendVisibleEventMsg(target.x, target.y,
 				format("%s hits thin air.", name), Color.red, true);*/
-			map.game.sendVisibleEventMsg(target.x, target.y, Color.red, true,
+			/*map.game.sendVisibleEventMsg(target.x, target.y, Color.red, true,
 				"%1$s hits thin air", name);
-			return true;
+			return true;*/
+			return false;
 		}
-		/*if (sigmoidChance(
-		dexterity_hit_chance_weight*stats[Stat.dexterity]
-		+ striking_hit_chance_weight*stats[Stat.striking]
-		+ observantness_hit_chance_weight*stats[Stat.observantness]
-		- agility_hit_chance_weight*target.stats[Stat.agility]
-		- dodging_hit_chance_weight*target.stats[Stat.dodging])) {*/
+
+		// Torso can be choosen 2 times more likely than each other part.
+		HumanFleshyBodyPart part = [
+			HumanFleshyBodyPart.left_arm,
+			HumanFleshyBodyPart.right_arm,
+			HumanFleshyBodyPart.left_leg,
+			HumanFleshyBodyPart.right_leg,
+			HumanFleshyBodyPart.head,
+			HumanFleshyBodyPart.torso,
+			HumanFleshyBodyPart.torso].choice(rng);
+
 		if (sigmoidChance(hit_chance_bonus-target.evasion_chance_bonus)) {
+			// Hit with a weapon.
 			if (weapon_index != -1 && items[weapon_index].is_hit) {
+
 				auto weapon = items[weapon_index];
 				Strike strike;
 
-				// TODO: Use effective stats instead.
-				// TODO: Split the calculation into several smaller ones.
-				/*target.hp -= uniform!"[]"(0, max(0,
-					scaledSigmoid(weapon.blunt_hit_damage,
-					strength_hit_damage_weight*stats[Stat.strength]
-					+ striking_hit_damage_weight*stats[Stat.striking]
-					+ scaledSigmoid(weapon.sharp_hit_damage,
-					+ strength_hit_damage_weight*stats[Stat.strength]
-					+ striking_hit_damage_weight*stats[Stat.striking]
-					+ dexterity_hit_damage_weight*stats[Stat.dexterity])
-					)));*/
-
-				foreach (int i, ref e; strike) {
+				foreach (uint i, ref e; strike) {
 					e = uniform!"[]"(0, scaledSigmoid(weapon.hit_max_strike[i],
 						hit_damage_bonus+weapon.hit_damage_bonus));
-					//writeln(weapon.hit_max_damage[i]);
-					writeln("q");
-					writeln(e);
 				}
 
-				// Torso can be choosen 2 times more likely than each other part.
-				HumanFleshyBodyPart part = [
-					HumanFleshyBodyPart.left_arm,
-					HumanFleshyBodyPart.right_arm,
-					HumanFleshyBodyPart.left_leg,
-					HumanFleshyBodyPart.right_leg,
-					HumanFleshyBodyPart.head,
-					HumanFleshyBodyPart.torso,
-					HumanFleshyBodyPart.torso].choice(rng);
-
+				string prev_damage_string = target.body_.getDamageString(
+					target.stats, part);
 				target.body_.dealStrike(target.stats, part, strike);
 				
-				map.game.sendVisibleEventMsg(target.x, target.y,
-					Color.red, true, "%1$s hits %2$s", name, target.name);
+				/*map.game.sendVisibleEventMsg(target.x, target.y,
+					Color.red, true, "%1$s hits %2$s in %3$s %4$s",
+					name, target.name, target.possesive_pronoun,
+					body_.getPartName(part));*/
+				actHitSendHitMsg(target, part, prev_damage_string);
 				return true;
+			// Hit bare-handed.
+			} else {
 			}
 			// For now, you cannot hit without a weapon.
 			// TODO: Change this.
 		}
 		//map.game.sendVisibleEventMsg(target.x, target.y,
 			//format("%s misses %s.", name, target.name), Color.red, true);
+		/*map.game.sendVisibleEventMsg(target.x, target.y,
+			Color.red, true, "%1$s misses %2$s", name, target.name);*/
+		actHitSendMissMsg(target, part);
+		return true;
+	}
+
+	protected void actHitSendHitMsg(const Actor target, uint part,
+		string prev_damage_string)
+	{
+		string damage_string = target.body_.getDamageString(stats, part);
+		if (damage_string == prev_damage_string) {
+			map.game.sendVisibleEventMsg(target.x, target.y,
+				Color.red, true, "%1$s hits %2$s in %3$s %4$s with %5$s %6$s!",
+				name, target.name, target.possesive_pronoun, body_.getPartName(part),
+				possesive_pronoun, items[weapon_index].name);
+		} else {
+			map.game.sendVisibleEventMsg(target.x, target.y,
+				Color.red, true, "%1$s hits %2$s in %3$s %4$s with %5$s %6$s"
+				~ " and the part becomes %7$s!",
+				name, target.name, target.possesive_pronoun, body_.getPartName(part),
+				possesive_pronoun, items[weapon_index].name, damage_string);
+		}
+	}
+
+	protected void actHitSendMissMsg(const Actor target, uint part)
+	{
 		map.game.sendVisibleEventMsg(target.x, target.y,
 			Color.red, true, "%1$s misses %2$s", name, target.name);
-		return true;
 	}
 
 	bool actHit(Point p)
 		in(map !is null)
 		{ return actHit(p.x, p.y); }
 
-	float getDistance(int x, int y) const pure
+	float getDistance(int x, int y) const /*pure*/
 	{
 		return sqrt(cast(float)((x-this.x)^^2+(y-this.y)^^2));
 	}
-	float getDistance(Point p) const pure
+	float getDistance(Point p) const /*pure*/
 		{ return getDistance(p.x, p.y); }
-	float getDistance(const Actor target) const pure
+	float getDistance(const Actor target) const /*pure*/
 		{ return getDistance(target.x, target.y); }
 }

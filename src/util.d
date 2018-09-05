@@ -307,24 +307,28 @@ int scaledSigmoid(int scale, int x)
 // HACK!
 string arrayFormat(string fmt, string[] args)
 {
-	if (args.length == 0) {
-		return fmt;
-	} else if (args.length == 1) {
-		debug writeln(args[0]);
-		return format(fmt, args[0]);
-	} else if (args.length == 2) {
-		debug writeln(fmt, " ", args[0], " ", args[1]);
-		return format(fmt, args[0], args[1]);
-	} else if (args.length == 3) {
-		debug writeln(args[0], " ", args[1], " ", args[2]);
-		return format(fmt, args[0], args[1], args[2]);
-	} else if (args.length == 4) {
-		debug writeln(args[0], " ", args[1], " ", args[2], " ", args[3]);
-		return format(fmt, args[0], args[1], args[2], args[3]);
-	} else if (args.length == 5) {
-		debug writeln(args[0], " ", args[1], " ", args[2], " ", args[3],
-			" ", args[4]);
-		return format(fmt, args[0], args[1], args[2], args[3], args[4]);
+	switch (args.length) {
+		case 0: return fmt;
+		case 1: return format(fmt, args[0]);
+		case 2: return format(fmt, args[0], args[1]);
+		case 3: return format(fmt, args[0], args[1], args[2]);
+		case 4: return format(fmt, args[0], args[1], args[2], args[3]);
+		case 5: return format(fmt, args[0], args[1], args[2], args[3], args[4]);
+		case 6:
+			return format(fmt, args[0], args[1], args[2], args[3], args[4],
+				args[5]);
+		case 7:
+			return format(fmt, args[0], args[1], args[2], args[3], args[4],
+				args[5], args[6]);
+		case 8:
+			return format(fmt, args[0], args[1], args[2], args[3], args[4],
+				args[5], args[6], args[7]);
+		case 9:
+			return format(fmt, args[0], args[1], args[2], args[3], args[4],
+				args[5], args[6], args[7], args[8]);
+		case 10:
+			return format(fmt, args[0], args[1], args[2], args[3], args[4],
+				args[5], args[6], args[7], args[8], args[9]);
+		default: assert(false);
 	}
-	assert(false);
 }

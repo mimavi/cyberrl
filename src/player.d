@@ -18,12 +18,13 @@ class PlayerActor : Actor
 
 	string _player_name;
 
-	@property override Symbol symbol()
+	@property override Symbol symbol() const /*pure*/
 		{ return Symbol('@', Color.white, Color.black, true); }
-	@property override string name() { return "you"; }
-	@property string player_name() { return _player_name; }
-	@property void player_name(string name) { _player_name = name; }
-	@property private string[int] item_appends()
+	@property override string name() const /*pure*/ { return "you"; }
+	@property override string possesive_pronoun() const /*pure*/ { return "your"; }
+	@property string player_name() const /*pure*/ { return _player_name; }
+	@property void player_name(string name) /*pure*/ { _player_name = name; }
+	@property private string[int] item_appends() const /*pure*/
 	{
 		return [
 			weapon_index: " (currently wielded)",
@@ -37,7 +38,7 @@ class PlayerActor : Actor
 	}
 	this(Serializer serializer) { this(); }
 
-	override void initPos(int x, int y)
+	override void initPos(int x, int y) /*pure*/
 	{
 		super.initPos(x, y);
 		map.game.centerizeCamera(x, y);
@@ -71,8 +72,13 @@ class PlayerActor : Actor
 					return false;
 				}
 			} else if (key >= Key.digit_1 && key <= Key.digit_9) {
-				has_acted = actMoveTo(x+key_to_point[key].x, y+key_to_point[key].y);
-					//actMoveTo(x+util.key_to_x[key], y+util.key_to_y[key]);
+				if (key_to_point[key].x != 0 || key_to_point[key].y != 0) {
+					has_acted = actHit(x+key_to_point[key].x, y+key_to_point[key].y);
+				}
+				if (!has_acted) {
+					has_acted =
+						actMoveTo(x+key_to_point[key].x, y+key_to_point[key].y);
+				}
 				if (!has_acted) {
 					has_acted = actOpen(x+key_to_point[key].x, y+key_to_point[key].y);
 				}
@@ -130,17 +136,15 @@ class PlayerActor : Actor
 	}
 
 	private Tuple!(Color, bool)
-		drawBodyStatusDamageArgs(HumanFleshyBodyPart part) const pure
+		drawBodyStatusDamageArgs(HumanFleshyBodyPart part) const /*pure*/
 	{
-		int percentage = 100-body_.getDamage(part)*100
+		uint percentage = 100-body_.getDamage(part)*100
 			/ body_.getMaxDamage(stats, part);
 		if (percentage == 100) {
 			return tuple(Color.white, true);
-		} else if (percentage >= 75) {
-			return tuple(Color.white, false);
-		} else if (percentage >= 50) {
+		} else if (percentage >= 70) {
 			return tuple(Color.yellow, true);
-		} else if (percentage >= 25) {
+		} else if (percentage >= 30) {
 			return tuple(Color.red, true);
 		} else if (percentage > 0) {
 			return tuple(Color.red, false);
@@ -159,9 +163,16 @@ class PlayerActor : Actor
 		return result;
 	}
 
-	/*private bool drawBodyStatusDamageToBright(int damage, int max_damage)
-		const pure
+	protected override void actHitSendMissMsg(const Actor target, uint part)
+		/*pure*/
 	{
+		map.game.sendVisibleEventMsg(target.x, target.y,
+			Color.red, true, "%1$s miss %2$s", name, target.name);
+	}
+
+	/*private bool drawBodyStatusDamageToBright(int damage, int max_damage)
+		const /*pure*/
+	/*{
 		int percentage = damage*100/max_damage;
 		if (percentage == 100) {
 			return true;

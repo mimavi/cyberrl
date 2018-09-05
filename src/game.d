@@ -20,8 +20,8 @@ struct Msg
 	Color color;
 	bool is_bright;
 
-	this(Serializer serializer) {}
-	this(string fmt, string[] args, Color color, bool is_bright)
+	this(Serializer serializer) /*pure*/ {}
+	this(string fmt, string[] args, Color color, bool is_bright) /*pure*/
 	{
 		this.fmt = fmt;
 		this.args = args;
@@ -52,7 +52,7 @@ class Game
 	private ulong id = 0; // `id == 0` means none.
 	private int camera_x, camera_y;
 
-	this(Map map)
+	this(Map map) /*pure*/
 	{
 		//map = new Map(300, 300);
 		this.map = map;
@@ -118,7 +118,10 @@ class Game
 		if (msgs.length > 0) {
 			//auto str = format(msgs[$-1].fmt, msgs[$-1].args);
 			auto str = arrayFormat(msgs[$-1].fmt, msgs[$-1].args);
-			str = toUpper(str[0])~str[1..$]~".";
+			str = toUpper(str[0])~str[1..$];
+			if (str[$-1] != '.' && str[$-1] != '!' && str[$-1] != '?') {
+				str = str[0..$]~".";
+			}
 			auto lines = splitAtSpaces(str, msg_display_width);
 			int y = msg_y_margin+msg_display_height-cast(int)lines.length;
 			int index = cast(int)msgs.length-1;
@@ -135,7 +138,10 @@ class Game
 				--index;
 				//str = format(msgs[index].fmt, msgs[index].args);
 				str = arrayFormat(msgs[index].fmt, msgs[index].args);
-				str = toUpper(str[0])~str[1..$]~".";
+				str = toUpper(str[0])~str[1..$];
+				if (str[$-1] != '.' && str[$-1] != '!' && str[$-1] != '?') {
+					str = str[0..$]~".";
+				}
 				lines = splitAtSpaces(str, msg_display_width);
 				y -= lines.length;
 			}
@@ -159,27 +165,27 @@ class Game
 		} while (i < min(msgs.length, msg_display_height));*/
 	}
 
-	void centerizeCamera(int x, int y)
+	void centerizeCamera(int x, int y) /*pure*/
 	{
 		camera_x = x-camera_width/2;
 		camera_y = y-camera_height/2;
 	}
 
-	static ulong filenameToId(string filename)
+	static ulong filenameToId(string filename) /*pure*/
 	{
 		// Remove leading "saves/" and trailing ".json",
 		// then convert to `int`.
 		return to!int(filename[6..$][0..$-5]);
 	}
 
-	static string idToFilename(ulong id)
+	static string idToFilename(ulong id) /*pure*/
 	{
 		return "saves/"~to!string(id)~".json";
 	}
 
 	// TODO: Allow for several source points to be specified.
 	void sendVisibleEventMsg(int x, int y, Color color, bool is_bright,
-		string fmt, string[] args...)
+		string fmt, string[] args...) /*pure*/
 	{
 		if (map.getTile(x, y).is_visible) {
 			//menu.sendMsg(msg, color, is_bright);
