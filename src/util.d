@@ -1,6 +1,4 @@
-debug {
-	public import std.stdio;
-}
+debug public import std.stdio;
 import std.container;
 import std.format;
 import std.datetime;
@@ -125,6 +123,37 @@ struct Point
 
 	this(Serializer serializer) {}
 	this(int x, int y) { this.x = x; this.y = y; }
+
+	void beforesave(Serializer serializer) {}
+	void beforeload(Serializer serializer) {}
+	void aftersave(Serializer serializer) {}
+	void afterload(Serializer serializer) {}
+
+	Point opUnary(string op)(Point p)
+	{
+		static if (op == "-") {
+			return Point(-p.x, -p.y);
+		}
+	}
+
+	Point opBinary(string op)(Point p1, Point p2)
+	{
+		static if (op == "+") {
+			return Point(p1.x+p2.x, p1.y+p2.y);
+		} static if (op == "-") {
+			return Point(p1.x-p2.x, p1.y-p2.y);
+		}
+	}
+}
+
+// TODO: Change `Point` to `UPoint` in places where it makes sense.
+struct UPoint
+{
+	mixin Serializable;
+	uint x, y;
+
+	this(Serializer serializer) {}
+	this(uint x, uint y) { this.x = x; this.y = y; }
 
 	void beforesave(Serializer serializer) {}
 	void beforeload(Serializer serializer) {}
@@ -329,6 +358,20 @@ string arrayFormat(string fmt, string[] args)
 		case 10:
 			return format(fmt, args[0], args[1], args[2], args[3], args[4],
 				args[5], args[6], args[7], args[8], args[9]);
+		case 11:
+			return format(fmt, args[0], args[1], args[2], args[3], args[4],
+				args[5], args[6], args[7], args[8], args[9], args[10]);
+		case 12:
+			return format(fmt, args[0], args[1], args[2], args[3], args[4],
+				args[5], args[6], args[7], args[8], args[9], args[10], args[11]);
+		case 13:
+			return format(fmt, args[0], args[1], args[2], args[3], args[4],
+				args[5], args[6], args[7], args[8], args[9], args[10], args[11],
+				args[12]);
+		case 14:
+			return format(fmt, args[0], args[1], args[2], args[3], args[4],
+				args[5], args[6], args[7], args[8], args[9], args[10], args[11],
+				args[12], args[13]);
 		default: assert(false);
 	}
 }

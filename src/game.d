@@ -3,6 +3,7 @@ import std.conv;
 import std.container;
 import std.format;
 import std.ascii;
+import std.regex;
 import std.stdio;
 import std.file;
 import util;
@@ -183,13 +184,52 @@ class Game
 		return "saves/"~to!string(id)~".json";
 	}
 
-	// TODO: Allow for several source points to be specified.
+	// Note: The first character in resulting sentence
+	// is automatically capitalized.
+	// The comma at the end of sentence is automatically inserted
+	// if not present, and if the sentence does not end with '!' or '?'.
+	void sendVisibleEventMsg(const Point[] ps, Color color, bool is_bright,
+		string fmt, string[] args...)
+	{
+		//auto re = regex(r"%(\d*)\((\d*)\)\|(\d*)\$");
+		bool is_any_visible = false;
+		foreach (int i, e; ps) {
+			auto re = regex(r"%(\d*)\("~to!string(i+1)~r"\)\|(\d*)\$");
+			if (map.getTile(e).is_visible) {
+				is_any_visible = true;
+				fmt = replaceAll(fmt, re, "%$1$$");
+			} else {
+				fmt = replaceAll(fmt, re, "%$2$$");
+			}
+		}
+		if (is_any_visible) {
+			msgs.insertBack(Msg(fmt, args.dup, color, is_bright));
+		}
+		/*foreach (e; ps) {
+			if (map.getTile(e).is_visible) {
+				/*foreach (ee; matchAll(fmt, r)) {
+					debug writeln(ee);
+					if (map.getTile(ps[to!int(ee[2])-1]).is_visible) {
+						fmt = ee.pre~"%"~ee[1]~"$"~ee.post;
+					} else {
+						fmt = ee.pre~"%"~ee[3]~"$"~ee.post;
+					}
+					debug writeln(fmt);
+				}*/
+				
+				/*msgs.insertBack(Msg(fmt, args.dup, color, is_bright));
+				return;
+			}
+		}*/
+	}
+
 	void sendVisibleEventMsg(int x, int y, Color color, bool is_bright,
 		string fmt, string[] args...) /*pure*/
 	{
-		if (map.getTile(x, y).is_visible) {
+		sendVisibleEventMsg([Point(x, y)], color, is_bright, fmt, args);
+		/*if (map.getTile(x, y).is_visible) {
 			//menu.sendMsg(msg, color, is_bright);
 			msgs.insertBack(Msg(fmt, args.dup, color, is_bright));
-		}
+		}*/
 	}
 }

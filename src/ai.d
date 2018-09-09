@@ -33,9 +33,6 @@ class AiActor : Actor
 	override bool subupdate()
 	{
 		if (map.getTile(x, y).is_visible) {
-			writeln(map);
-			writeln(map.game);
-			writeln(map.game.player);
 			group.target = map.game.player;
 		}
 		if (path.length >= 2) {

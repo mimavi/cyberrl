@@ -1,7 +1,5 @@
 import std.algorithm.comparison;
 import std.container;
-import std.format; // TODO: Don't use `format` function here.
-
 import std.random;
 import std.math;
 import util;
@@ -17,7 +15,7 @@ immutable bool debug_can_move_anywhere = false;
 
 enum Gender {male, female, neuter}
 
-class Actor
+abstract class Actor
 {
 	invariant(body_ !is null);
 
@@ -29,32 +27,32 @@ class Actor
 	enum dexterity_ap_weight = 10;
 	enum hitting_ap_weight = 5;
 
-	/*enum dexterity_hit_chance_weight = 1;
-	enum observantness_hit_chance_weight = 1;
-	enum striking_hit_chance_weight = 1;
-	enum agility_hit_chance_weight = 1;
-	enum dodging_hit_chance_weight = 1;
-	enum strength_hit_damage_weight = 1;
-	enum striking_hit_damage_weight = 1;
-	enum dexterity_hit_damage_weight = 1;*/
-
 	enum ap_action_threshold = 100;
 
 	@noser Map map;
-	Stats _stats;
-	Body body_;
-	Array!Item items;
 	bool is_despawned = false;
 
+	/*protected*/ Body body_;
 	protected int weapon_index = -1;
 	private int ap;
 	private int _x, _y;
 	private Gender gender = Gender.male;
 
-	abstract bool subupdate(); // Return false if `Map.update()` shall return.
 	@property abstract Symbol symbol() const /*pure*/;
 	@property abstract string name() const /*pure*/;
+	//@property abstract Strike unarmed_max_strike();
+	abstract bool subupdate(); // Return false if `Map.update()` shall return.
 
+	@property string definite_name() const /*pure*/ { return "the "~name; }
+	@property string indefinite_name() const /*pure*/
+	{
+		if (name[0] == 'a' || name[0] == 'e' || name[0] == 'o'
+		|| name[0] == 'u' || name[0] == 'i') {
+			return "an "~name;
+		} else {
+			return "a "~name;
+		}
+	}
 	@property string possesive_pronoun() const /*pure*/
 	{
 		final switch(gender) {
@@ -64,12 +62,12 @@ class Actor
 		}
 	}
 
-	// "ap" means "action points". "eff" means "effective".
-	@property Stats stats() const /*pure*/ { return _stats; }
+	// XXX: Superfluous?
+	@property Stats stats() const /*pure*/ { return body_.stats; }
 	@property void stats(Stats stats)
 	{
-		_stats = stats;
-		body_.update();
+		body_.stats = stats;
+		//body_.update();
 		//body_ = new ActorBody(stats);
 	}
 
@@ -106,6 +104,10 @@ class Actor
 
 	@property int x() const /*pure*/ { return _x; }
 	@property int y() const /*pure*/ { return _y; }
+	@property Point pos() const { return Point(_x, _y); }
+
+	// XXX: Superfluous?
+	@property ref Array!Item items() { return body_.items; }
 
 	this(Stats stats = Stats())
 	{
@@ -139,7 +141,6 @@ class Actor
 
 	void initPos(int x, int y) /*pure*/
 	{
-		debug writeln(x, " ", y, " ", map.getTile(x, y).zone);
 		map.getTile(x, y).actor = this;
 		_x = x;
 		_y = y;
@@ -152,7 +153,8 @@ class Actor
 	}
 
 	// NOTE:
-	// The `act*` methods shall be designed to never throw errors.
+	// The `act*` methods shall be designed to never throw
+	// exceptions and errors.
 
 	bool actWait()
 		in(map !is null)
@@ -250,14 +252,6 @@ class Actor
 		auto target = map.getTile(x, y).actor;
 
 		if (target is null) {
-			/*ap -= base_ap_cost
-				- dexterity_ap_weight*stats[Stat.dexterity]
-				- hitting_ap_weight*stats[Stat.striking];
-			/*map.game.sendVisibleEventMsg(target.x, target.y,
-				format("%s hits thin air.", name), Color.red, true);*/
-			/*map.game.sendVisibleEventMsg(target.x, target.y, Color.red, true,
-				"%1$s hits thin air", name);
-			return true;*/
 			return false;
 		}
 
@@ -269,66 +263,90 @@ class Actor
 			HumanFleshyBodyPart.right_leg,
 			HumanFleshyBodyPart.head,
 			HumanFleshyBodyPart.torso,
-			HumanFleshyBodyPart.torso].choice(rng);
+			HumanFleshyBodyPart.torso
+		].choice(rng);
 
+		// TODO: Weapon skills and unarmed fighting skills should also affect
+		// probability of hitting.
 		if (sigmoidChance(hit_chance_bonus-target.evasion_chance_bonus)) {
+			string prev_damage_str = target.body_.getDamageStr(part);
 			// Hit with a weapon.
-			if (weapon_index != -1 && items[weapon_index].is_hit) {
+			if (weapon_index != -1 && items[weapon_index].can_hit) {
 
 				auto weapon = items[weapon_index];
 				Strike strike;
-
-				foreach (uint i, ref e; strike) {
+				foreach (int i, ref e; strike) {
 					e = uniform!"[]"(0, scaledSigmoid(weapon.hit_max_strike[i],
 						hit_damage_bonus+weapon.hit_damage_bonus));
 				}
 
-				string prev_damage_string = target.body_.getDamageString(
-					target.stats, part);
-				target.body_.dealStrike(target.stats, part, strike);
-				
-				/*map.game.sendVisibleEventMsg(target.x, target.y,
-					Color.red, true, "%1$s hits %2$s in %3$s %4$s",
-					name, target.name, target.possesive_pronoun,
-					body_.getPartName(part));*/
-				actHitSendHitMsg(target, part, prev_damage_string);
-				return true;
-			// Hit bare-handed.
+				target.body_.dealStrike(part, strike);
+				actHitSendHitMsg(target, part, prev_damage_str);
+			// Hit unarmed.
 			} else {
+				Strike strike;
+				foreach (int i, ref e; strike) {
+					e = uniform!"[]"(0, scaledSigmoid(body_.unarmed_max_strike[i],
+						hit_damage_bonus));
+				}
+
+				target.body_.dealStrike(part, strike);
+				actHitSendUnarmedHitMsg(target, part, prev_damage_str);
 			}
 			// For now, you cannot hit without a weapon.
 			// TODO: Change this.
+		} else {
+			actHitSendMissMsg(target, part);
 		}
-		//map.game.sendVisibleEventMsg(target.x, target.y,
-			//format("%s misses %s.", name, target.name), Color.red, true);
-		/*map.game.sendVisibleEventMsg(target.x, target.y,
-			Color.red, true, "%1$s misses %2$s", name, target.name);*/
-		actHitSendMissMsg(target, part);
+
+		ap -= base_ap_cost - dexterity_ap_weight*stats[Stat.dexterity];
 		return true;
 	}
 
-	protected void actHitSendHitMsg(const Actor target, uint part,
-		string prev_damage_string)
+	protected void actHitSendHitMsg(const Actor target, int part,
+		string prev_damage_str)
 	{
-		string damage_string = target.body_.getDamageString(stats, part);
-		if (damage_string == prev_damage_string) {
-			map.game.sendVisibleEventMsg(target.x, target.y,
-				Color.red, true, "%1$s hits %2$s in %3$s %4$s with %5$s %6$s!",
-				name, target.name, target.possesive_pronoun, body_.getPartName(part),
+		string damage_str = target.body_.getDamageStr(part);
+		if (damage_str == prev_damage_str) {
+			map.game.sendVisibleEventMsg([pos, target.pos],
+				Color.red, true, "%1(1)|2$s hits %3(2)|4$s in %5$s %6$s"
+				~" with %7$s %8$s!",
+				definite_name, "somebody", target.definite_name, "somebody",
+				target.possesive_pronoun, body_.getPartName(part),
 				possesive_pronoun, items[weapon_index].name);
 		} else {
-			map.game.sendVisibleEventMsg(target.x, target.y,
-				Color.red, true, "%1$s hits %2$s in %3$s %4$s with %5$s %6$s"
-				~ " and the part becomes %7$s!",
-				name, target.name, target.possesive_pronoun, body_.getPartName(part),
-				possesive_pronoun, items[weapon_index].name, damage_string);
+			map.game.sendVisibleEventMsg([pos, target.pos],
+				Color.red, true, "%2(1)|1$s hits %3(2)|1$s in %4$s %5$s"
+				~" with %6$s %7$s and the part becomes %8$s!",
+				"somebody", definite_name, target.definite_name,
+				target.possesive_pronoun, body_.getPartName(part),
+				possesive_pronoun, items[weapon_index].name, damage_str);
 		}
 	}
 
-	protected void actHitSendMissMsg(const Actor target, uint part)
+	protected void actHitSendUnarmedHitMsg(const Actor target, int part,
+		string prev_damage_str)
+	{
+		string damage_str = target.body_.getDamageStr(part);
+		if (damage_str == prev_damage_str) {
+			map.game.sendVisibleEventMsg([pos, target.pos],
+				Color.red, true, "%2(1)|1$s hits %3(2)|1$s in %4$s %5$s!",
+				"somebody", definite_name, target.definite_name,
+				target.possesive_pronoun, body_.getPartName(part));
+		} else {
+			map.game.sendVisibleEventMsg([pos, target.pos],
+				Color.red, true, "%2(1)|1$s hits %3(2)|1$s in %4$s %5$s"
+				~" and the part becomes %6$s",
+				"somebody", definite_name, target.definite_name,
+				target.possesive_pronoun, body_.getPartName(part), damage_str);
+		}
+	}
+
+	protected void actHitSendMissMsg(const Actor target, int part)
 	{
 		map.game.sendVisibleEventMsg(target.x, target.y,
-			Color.red, true, "%1$s misses %2$s", name, target.name);
+			Color.red, false, "%1$s misses %2$s", definite_name,
+			target.definite_name);
 	}
 
 	bool actHit(Point p)
@@ -336,9 +354,7 @@ class Actor
 		{ return actHit(p.x, p.y); }
 
 	float getDistance(int x, int y) const /*pure*/
-	{
-		return sqrt(cast(float)((x-this.x)^^2+(y-this.y)^^2));
-	}
+		{ return sqrt(cast(float)((x-this.x)^^2+(y-this.y)^^2)); }
 	float getDistance(Point p) const /*pure*/
 		{ return getDistance(p.x, p.y); }
 	float getDistance(const Actor target) const /*pure*/

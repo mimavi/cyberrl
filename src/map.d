@@ -67,7 +67,7 @@ class Map
 		}
 		return tiles[x+y*_width];
 	}
-	ref Tile getTile(Point point) { return getTile(point.x, point.y); }
+	ref Tile getTile(Point p) { return getTile(p.x, p.y); }
 
 	void spawn(Actor actor, int x, int y)
 	{

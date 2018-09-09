@@ -19,7 +19,7 @@ void main()
 		main_game.spawn(main_game.player, 10, 10);
 
 		auto rng = Random(
-			cast(uint) Clock.currTime().fracSecs().total!"hnsecs");
+			cast(int) Clock.currTime().fracSecs().total!"hnsecs");
 		foreach (i; 1..10000) {
 			int x = uniform(0, 300, rng);
 			int y = uniform(0, 300, rng);

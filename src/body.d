@@ -1,7 +1,9 @@
 import std.algorithm.comparison;
+import std.container;
 import util;
 import ser;
 import stat;
+import item;
 
 enum HumanFleshyBodyPart
 {
@@ -20,20 +22,40 @@ struct Strike
 	int[DamageType.max+1] damages;
 	alias damages this;
 
+	@property bool is_null()
+	{
+		foreach (e; this) {
+			if (e != 0) {
+				return false;
+			}
+		}
+		return true;
+	}
+
 	/*this(int[DamageType.max+1] damages) /*pure*/
 	/*{
 		this.damages = damages;
 	}*/
 }
 
-class Body
+abstract class Body
 {
 	mixin Serializable;
 	mixin SimplySerialized;
 
 	enum max_resistance = 4;
 
-	@property Strike base_max_strike() const /*pure*/
+	Array!Item items;
+	private Stats _stats;
+
+	@property void stats(Stats stats)
+	{
+		_stats = stats;
+		update();
+	}
+	@property Stats stats() const { return _stats; }
+
+	@property Strike unarmed_max_strike() const /*pure*/
 	{
 		Strike strike;
 		strike[DamageType.blunt] = 10;
@@ -42,34 +64,34 @@ class Body
 	@property int dexterity_mod() const /*pure*/ { return 0; }
 	@property int agility_mod() const /*pure*/ { return 0; }
 
-	this() /*pure*/ {}
+	//this(Actor actor) { this.items = &actor.items; }/*pure*/
+	this() {}
 	this(Serializer serializer) /*pure*/ {}
 
 	//void update(Stats stats) {}
-	void dealStrike(Stats stats, int part, Strike strike) /*pure*/
+	void dealStrike(int part, Strike strike) /*pure*/
 	{
-		foreach(int i, e; strike) {
-			int resistance = getResistance(stats, cast(DamageType)i, part);
-			debug writeln(e*(max_resistance-resistance)/max_resistance);
-			dealDamage(stats, part, e*(max_resistance-resistance)/max_resistance);
+		foreach (int i, e; strike) {
+			int resistance = getResistance(cast(DamageType)i, part);
+			dealDamage(part, e*(max_resistance-resistance)/max_resistance);
 		}
 	}
 
 	void update() /*pure*/ {};
 
-	protected abstract void dealDamage(Stats stats, int part, int damage) /*pure*/
-		out { assert(getDamage(part) <= getMaxDamage(stats, part)); }
+	protected abstract void dealDamage(int part, int damage) /*pure*/
+		out { assert(getDamage(part) <= getMaxDamage(part)); }
 		do {}
 
 	abstract int getDamage(int part) const /*pure*/;
-	abstract int getMaxDamage(Stats stats, int part) const /*pure*/;
-	abstract int getResistance(Stats stats, DamageType damage_type, int part)
+	abstract int getMaxDamage(int part) const /*pure*/;
+	abstract int getResistance(DamageType damage_type, int part)
 		const /*pure*/;
 	abstract string getPartName(int part) const /*pure*/;
-	abstract string getDamageString(Stats stats, uint part) const /*pure*/;
+	abstract string getDamageStr(int part) const /*pure*/;
 }
 
-class FleshyBody : Body
+abstract class FleshyBody : Body
 {
 	mixin InheritedSerializable;
 
@@ -81,7 +103,7 @@ class FleshyBody : Body
 	@property abstract int total_bleeding() const /*pure*/;
 	@property abstract int total_pain() const /*pure*/;
 
-	this() /*pure*/ {}
+	this() /*pure*/ { super(); }
 	this(Serializer serializer) /*pure*/ { super(serializer); }
 
 	override void update() /*pure*/
@@ -89,7 +111,7 @@ class FleshyBody : Body
 		_lost_blood += total_bleeding;
 	}
 
-	abstract int getMaxLostBlood(Stats stats) const /*pure*/;
+	abstract int getMaxLostBlood() const /*pure*/;
 	abstract int getBleeding(int part) const /*pure*/;
 	abstract int getPain(int part) const /*pure*/;
 }
@@ -117,23 +139,24 @@ class HumanFleshyBody : FleshyBody
 		return 0;
 	}
 
-	this() /*pure*/ {}
+	//this(Actor actor) /*pure*/ { super(actor); }
+	this() { super(); }
 	this(Serializer serializer) /*pure*/ { super(serializer); }
 
-	override void dealStrike(Stats stats, int part, Strike base_damage) /*pure*/
+	override void dealStrike(int part, Strike base_damage) /*pure*/
 	{
-		super.dealStrike(stats, part, base_damage);
+		super.dealStrike(part, base_damage);
 		bleeding[cast(HumanFleshyBodyPart)part]
 			+= (bleeding_from_sharp_divisor+base_damage[DamageType.sharp])
 			/ bleeding_from_sharp_divisor;
 	}
 
-	protected override void dealDamage(Stats stats, int part, int damage) /*pure*/
+	protected override void dealDamage(int part, int damage) /*pure*/
 	{
 		this.damage[cast(HumanFleshyBodyPart)part] += damage;
 		this.damage[cast(HumanFleshyBodyPart)part] =
 			min(this.damage[cast(HumanFleshyBodyPart)part],
-			getMaxDamage(stats, part));
+			getMaxDamage(part));
 	}
 
 	override int getDamage(int part) const /*pure*/
@@ -141,7 +164,7 @@ class HumanFleshyBody : FleshyBody
 		return damage[cast(HumanFleshyBodyPart)part];
 	}
 
-	override int getMaxDamage(Stats stats, int part) const /*pure*/
+	override int getMaxDamage(int part) const /*pure*/
 	{
 		final switch(cast(HumanFleshyBodyPart)part) {
 			case HumanFleshyBodyPart.head:
@@ -159,7 +182,7 @@ class HumanFleshyBody : FleshyBody
 		}
 	}
 
-	override int getResistance(Stats stats, DamageType damage_type, int part) 
+	override int getResistance(DamageType damage_type, int part) 
 		const /*pure*/
 	{
 		if (damage_type == DamageType.electromagnetic) {
@@ -169,7 +192,7 @@ class HumanFleshyBody : FleshyBody
 		}
 	}
 
-	override int getMaxLostBlood(Stats stats) const /*pure*/ { return 1000; }
+	override int getMaxLostBlood() const /*pure*/ { return 1000; }
 
 	override int getBleeding(int part) const /*pure*/
 	{
@@ -195,9 +218,9 @@ class HumanFleshyBody : FleshyBody
 	}
 	
 	// TODO: Return bleeding info.
-	override string getDamageString(Stats stats, uint part) const /*pure*/
+	override string getDamageStr(int part) const /*pure*/
 	{
-		uint percentage = 100-getDamage(part)*100/getMaxDamage(stats, part);
+		uint percentage = 100-getDamage(part)*100/getMaxDamage(part);
 		if (percentage == 100) {
 			return "unwounded";
 		} else if (percentage >= 70) {

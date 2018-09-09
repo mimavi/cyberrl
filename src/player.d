@@ -21,7 +21,10 @@ class PlayerActor : Actor
 	@property override Symbol symbol() const /*pure*/
 		{ return Symbol('@', Color.white, Color.black, true); }
 	@property override string name() const /*pure*/ { return "you"; }
-	@property override string possesive_pronoun() const /*pure*/ { return "your"; }
+	@property override string definite_name() const /*pure*/ { return name; }
+	@property override string indefinite_name() const /*pure*/ { return name; }
+	@property override string possesive_pronoun() const /*pure*/
+		{ return "your"; }
 	@property string player_name() const /*pure*/ { return _player_name; }
 	@property void player_name(string name) /*pure*/ { _player_name = name; }
 	@property private string[int] item_appends() const /*pure*/
@@ -138,8 +141,7 @@ class PlayerActor : Actor
 	private Tuple!(Color, bool)
 		drawBodyStatusDamageArgs(HumanFleshyBodyPart part) const /*pure*/
 	{
-		uint percentage = 100-body_.getDamage(part)*100
-			/ body_.getMaxDamage(stats, part);
+		int percentage = 100-body_.getDamage(part)*100/body_.getMaxDamage(part);
 		if (percentage == 100) {
 			return tuple(Color.white, true);
 		} else if (percentage >= 70) {
@@ -163,11 +165,53 @@ class PlayerActor : Actor
 		return result;
 	}
 
-	protected override void actHitSendMissMsg(const Actor target, uint part)
+	protected override void actHitSendHitMsg(const Actor target, int part,
+		string prev_damage_str)
 		/*pure*/
 	{
-		map.game.sendVisibleEventMsg(target.x, target.y,
-			Color.red, true, "%1$s miss %2$s", name, target.name);
+		string damage_str = target.body_.getDamageStr(part);
+		if (damage_str == prev_damage_str) {
+			map.game.sendVisibleEventMsg([pos, target.pos],
+				Color.white, true, "%1(1)|2$s hit %3(2)|4$s in %5$s %6$s"
+				~" with %7$s %8$s!",
+				definite_name, "somebody", target.definite_name, "somebody",
+				target.possesive_pronoun, body_.getPartName(part),
+				possesive_pronoun, items[weapon_index].name);
+		} else {
+			map.game.sendVisibleEventMsg([pos, target.pos],
+				Color.white, true, "%2(1)|1$s hit %3(2)|1$s in %4$s %5$s"
+				~" with %6$s %7$s and the part becomes %8$s!",
+				"somebody", definite_name, target.definite_name,
+				target.possesive_pronoun, body_.getPartName(part),
+				possesive_pronoun, items[weapon_index].name, damage_str);
+		}
+	}
+
+	protected override void actHitSendUnarmedHitMsg(const Actor target,
+		int part, string prev_damage_str)
+	{
+		string damage_str = target.body_.getDamageStr(part);
+		if (damage_str == prev_damage_str) {
+			map.game.sendVisibleEventMsg([pos, target.pos],
+				Color.white, true, "%2(1)|1$s hit %3(2)|1$s in %4$s %5$s!",
+				"somebody", definite_name, target.definite_name,
+				target.possesive_pronoun, body_.getPartName(part));
+		} else {
+			map.game.sendVisibleEventMsg([pos, target.pos],
+				Color.white, true, "%2(1)|1$s hit %3(2)|1$s in %4$s %5$s"
+				~" and the part becomes %6$s",
+				"somebody", definite_name, target.definite_name,
+				target.possesive_pronoun, body_.getPartName(part), damage_str);
+		}
+	}
+
+	protected override void actHitSendMissMsg(const Actor target, int part)
+		/*pure*/
+	{
+		map.game.sendVisibleEventMsg([pos, target.pos],
+			Color.white, false, "%2(1)|1$s miss %3(2)|1$s",
+			"somebody", definite_name, target.definite_name);
+			//definite_name, "somebody", target.definite_name, "somebody");
 	}
 
 	/*private bool drawBodyStatusDamageToBright(int damage, int max_damage)
