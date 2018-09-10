@@ -51,9 +51,6 @@ class PlayerActor : Actor
 	{
 		void fovCallback(int tile_x, int tile_y, Tile tile)
 		{
-			//tile.draw(x, y);
-			//tile.is_visibles = true;
-			//tile.is_discovered = true;
 			tile.is_visible = true;
 			map.visibles.insertBack(Point(tile_x, tile_y));
 		}
@@ -165,10 +162,65 @@ class PlayerActor : Actor
 		return result;
 	}
 
-	protected override void actHitSendHitMsg(const Actor target, int part,
+	private string act_hit_prev_damage_str;
+
+	override void onHitJustBefore(int x, int y, int part)
+	{
+		auto hittee = map.getTile(x, y).actor;
+		act_hit_prev_damage_str = hittee.body_.getDamageStr(part);
+	}
+
+	override void onHitImpact(int x, int y, int part)
+	{
+		auto hittee = map.getTile(x, y).actor;
+		string damage_str = hittee.body_.getDamageStr(part);
+		if (damage_str == act_hit_prev_damage_str) {
+			map.game.sendVisibleEventMsg([pos, hittee.pos],
+				Color.white, true, "%1(1)|2$s hit %3(2)|4$s in %5$s %6$s"
+				~" with %7$s %8$s!",
+				definite_name, "somebody", hittee.definite_name, "somebody",
+				hittee.possesive_pronoun, body_.getPartName(part),
+				possesive_pronoun, items[weapon_index].name);
+		} else {
+			map.game.sendVisibleEventMsg([pos, hittee.pos],
+				Color.white, true, "%2(1)|1$s hit %3(2)|1$s in %4$s %5$s"
+				~" with %6$s %7$s and the part becomes %8$s!",
+				"somebody", definite_name, hittee.definite_name,
+				hittee.possesive_pronoun, body_.getPartName(part),
+				possesive_pronoun, items[weapon_index].name, damage_str);
+		}
+	}
+
+	override void onHitMiss(int x, int y)
+	{
+		auto hittee = map.getTile(x, y).actor;
+		map.game.sendVisibleEventMsg([pos, hittee.pos],
+			Color.white, false, "%2(1)|1$s miss %3(2)|1$s",
+			"somebody", definite_name, hittee.definite_name);
+	}
+
+	override void onUnarmedHitImpact(int x, int y, int part)
+	{
+		auto hittee = map.getTile(x, y).actor;
+		string damage_str = hittee.body_.getDamageStr(part);
+		if (damage_str == act_hit_prev_damage_str) {
+			map.game.sendVisibleEventMsg([pos, hittee.pos],
+				Color.white, true, "%2(1)|1$s hit %3(2)|1$s in %4$s %5$s!",
+				"somebody", definite_name, hittee.definite_name,
+				hittee.possesive_pronoun, body_.getPartName(part));
+		} else {
+			map.game.sendVisibleEventMsg([pos, hittee.pos],
+				Color.white, true, "%2(1)|1$s hit %3(2)|1$s in %4$s %5$s"
+				~" and the part becomes %6$s!",
+				"somebody", definite_name, hittee.definite_name,
+				hittee.possesive_pronoun, body_.getPartName(part), damage_str);
+		}
+	}
+
+	/*protected override void actHitSendHitMsg(const Actor target, int part,
 		string prev_damage_str)
 		/*pure*/
-	{
+	/*{
 		string damage_str = target.body_.getDamageStr(part);
 		if (damage_str == prev_damage_str) {
 			map.game.sendVisibleEventMsg([pos, target.pos],
@@ -207,12 +259,12 @@ class PlayerActor : Actor
 
 	protected override void actHitSendMissMsg(const Actor target, int part)
 		/*pure*/
-	{
+	/*{
 		map.game.sendVisibleEventMsg([pos, target.pos],
 			Color.white, false, "%2(1)|1$s miss %3(2)|1$s",
 			"somebody", definite_name, target.definite_name);
 			//definite_name, "somebody", target.definite_name, "somebody");
-	}
+	}*/
 
 	/*private bool drawBodyStatusDamageToBright(int damage, int max_damage)
 		const /*pure*/

@@ -1,6 +1,6 @@
 // Prevent aborting the executable if a cycle is detected.
 // Cycles are not harmful in our case,
-// since static constructors do not interact with each other.
+// since static constructors don't interact with each other.
 extern(C) __gshared string[] rt_options = ["oncycle=ignore"];
 
 //import std.range.primitives;
@@ -19,8 +19,7 @@ mixin template Serializable()
 	import util;
 	//immutable bool is_ser = true;
 	enum is_ser = true;
-	@noser
-		static typeof(this) function(Serializer)[string] submakes;
+	@noser static typeof(this) function(Serializer)[string] submakes;
 	@property string type() { return typeof(this).stringof; }
 
 	static this() // XXX.

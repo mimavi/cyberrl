@@ -1,3 +1,5 @@
+// XXX: Perhaps rename all "bonus" to "mod"?
+
 import std.algorithm.comparison;
 import std.container;
 import std.random;
@@ -140,6 +142,7 @@ abstract class Actor
 	}
 
 	void initPos(int x, int y) /*pure*/
+		in(map !is null)
 	{
 		map.getTile(x, y).actor = this;
 		_x = x;
@@ -147,14 +150,11 @@ abstract class Actor
 	}
 
 	void setPos(int x, int y)
+		in(map !is null)
 	{
 		map.getTile(_x, _y).actor = null;
 		initPos(x, y);
 	}
-
-	// NOTE:
-	// The `act*` methods shall be designed to never throw
-	// exceptions and errors.
 
 	bool actWait()
 		in(map !is null)
@@ -243,10 +243,138 @@ abstract class Actor
 		return true;
 	}
 
-	// TODO: If either attacker or target is not visible,
-	// then properly replace their name with some replacement,
-	// e.g. "somebody".
+	private string act_hit_prev_damage_str;
+
 	bool actHit(int x, int y)
+		in(map !is null)
+	{
+		auto hittee = map.getTile(x, y).actor;
+
+		if (weapon_index != -1) {
+			if (items[weapon_index].tryHit(this, x, y)) {
+				ap -= base_ap_cost - dexterity_ap_weight*stats[Stat.dexterity];
+				return true;
+			}
+		} else {
+			if (hittee is null) {
+				return false;
+			}
+			if (rollWhetherUnarmedHitImpacts(hittee)) {
+				// Torso can be hit 2 times more likely than each other part.
+				auto part = [
+					HumanFleshyBodyPart.left_arm,
+					HumanFleshyBodyPart.right_arm,
+					HumanFleshyBodyPart.left_leg,
+					HumanFleshyBodyPart.right_leg,
+					HumanFleshyBodyPart.head,
+					HumanFleshyBodyPart.torso,
+					HumanFleshyBodyPart.torso
+				].choice(rng);
+
+				onUnarmedHitJustBefore(x, y, part);
+
+				auto strike = rollUnarmedHitStrike();
+				hittee.body_.dealStrike(part, strike);
+				ap -= base_ap_cost - dexterity_ap_weight*stats[Stat.dexterity];
+				onUnarmedHitImpact(x, y, part);
+				return true;
+			} else {
+				ap -= base_ap_cost - dexterity_ap_weight*stats[Stat.dexterity];
+				onUnarmedHitMiss(x, y);
+				return true;
+			}
+		}
+
+		return false;
+	}
+	bool actHit(Point p) { return actHit(p.x, p.y); }
+
+	void onTryHitWeaponCantHit(int x, int y) {}
+
+	void onTryHitNothing(int x, int y) {}
+
+	void onHitJustBefore(int x, int y, int part)
+	{
+		auto hittee = map.getTile(x, y).actor;
+		act_hit_prev_damage_str = hittee.body_.getDamageStr(part);
+	}
+
+	void onHitImpact(int x, int y, int part)
+		in(map.getTile(x, y).actor !is null)
+	{
+		auto hittee = map.getTile(x, y).actor;
+		string damage_str = hittee.body_.getDamageStr(part);
+		if (damage_str == act_hit_prev_damage_str) {
+			map.game.sendVisibleEventMsg([pos, hittee.pos], Color.red, true,
+				"%1(1)|2$s hits %3(2)|4$s in %5$s %6$s"
+				~" with %7$s %8$s!",
+				definite_name, "somebody", hittee.definite_name, "somebody",
+				hittee.possesive_pronoun, body_.getPartName(part),
+				possesive_pronoun, items[weapon_index].name);
+		} else {
+			map.game.sendVisibleEventMsg([pos, hittee.pos], Color.red, true,
+				"%2(1)|1$s hits %3(2)|1$s in %4$s %5$s"
+				~" with %6$s %7$s and the part becomes %8$s!",
+				"somebody", definite_name, hittee.definite_name,
+				hittee.possesive_pronoun, body_.getPartName(part),
+				possesive_pronoun, items[weapon_index].name, damage_str);
+		}
+	}
+
+	void onHitMiss(int x, int y)
+		in(map.getTile(x, y).actor !is null)
+	{
+		auto hittee = map.getTile(x, y).actor;
+		map.game.sendVisibleEventMsg(hittee.x, hittee.y, Color.red, false,
+			"%1$s misses %2$s", definite_name,
+			hittee.definite_name);
+	}
+
+	void onUnarmedHitJustBefore(int x, int y, int part)
+	{
+		onHitJustBefore(x, y, part);
+	}
+
+	void onUnarmedHitImpact(int x, int y, int part)
+		in(map.getTile(x, y).actor !is null)
+	{
+		auto hittee = map.getTile(x, y).actor;
+		string damage_str = hittee.body_.getDamageStr(part);
+		if (damage_str == act_hit_prev_damage_str) {
+			map.game.sendVisibleEventMsg([pos, hittee.pos], Color.red, true,
+				"%2(1)|1$s hits %3(2)|1$s in %4$s %5$s!",
+				"somebody", definite_name, hittee.definite_name,
+				hittee.possesive_pronoun, body_.getPartName(part));
+		} else {
+			map.game.sendVisibleEventMsg([pos, hittee.pos], Color.red, true,
+				"%2(1)|1$s hits %3(2)|1$s in %4$s %5$s"
+				~" and the part becomes %6$s",
+				"somebody", definite_name, hittee.definite_name,
+				hittee.possesive_pronoun, body_.getPartName(part), damage_str);
+		}
+	}
+
+	void onUnarmedHitMiss(int x, int y) { onHitMiss(x, y); }
+	//void onUnarmedHitNothing(int x, int y) { onHitNothing(x, y); }
+
+	bool actShoot(int x, int y)
+		in(map !is null)
+	{
+		if (weapon_index != -1) {
+			return items[weapon_index].tryShoot(this, x, y);
+		}
+		return false;
+	}
+
+	void onTryShootWeaponCantShoot(int x, int y)
+	{
+	}
+
+	void onTryShootNoLoadedAmmo(int x, int y)
+	{
+	}
+
+	/*bool actHit(int x, int y)
 		in(map !is null)
 	{
 		auto target = map.getTile(x, y).actor;
@@ -255,16 +383,6 @@ abstract class Actor
 			return false;
 		}
 
-		// Torso can be choosen 2 times more likely than each other part.
-		HumanFleshyBodyPart part = [
-			HumanFleshyBodyPart.left_arm,
-			HumanFleshyBodyPart.right_arm,
-			HumanFleshyBodyPart.left_leg,
-			HumanFleshyBodyPart.right_leg,
-			HumanFleshyBodyPart.head,
-			HumanFleshyBodyPart.torso,
-			HumanFleshyBodyPart.torso
-		].choice(rng);
 
 		// TODO: Weapon skills and unarmed fighting skills should also affect
 		// probability of hitting.
@@ -302,21 +420,24 @@ abstract class Actor
 		ap -= base_ap_cost - dexterity_ap_weight*stats[Stat.dexterity];
 		return true;
 	}
+	bool actHit(Point p)
+		in(map !is null)
+		{ return actHit(p.x, p.y); }
 
 	protected void actHitSendHitMsg(const Actor target, int part,
 		string prev_damage_str)
 	{
 		string damage_str = target.body_.getDamageStr(part);
 		if (damage_str == prev_damage_str) {
-			map.game.sendVisibleEventMsg([pos, target.pos],
-				Color.red, true, "%1(1)|2$s hits %3(2)|4$s in %5$s %6$s"
+			map.game.sendVisibleEventMsg([pos, target.pos], Color.red, true,
+				"%1(1)|2$s hits %3(2)|4$s in %5$s %6$s"
 				~" with %7$s %8$s!",
 				definite_name, "somebody", target.definite_name, "somebody",
 				target.possesive_pronoun, body_.getPartName(part),
 				possesive_pronoun, items[weapon_index].name);
 		} else {
-			map.game.sendVisibleEventMsg([pos, target.pos],
-				Color.red, true, "%2(1)|1$s hits %3(2)|1$s in %4$s %5$s"
+			map.game.sendVisibleEventMsg([pos, target.pos], Color.red, true,
+				"%2(1)|1$s hits %3(2)|1$s in %4$s %5$s"
 				~" with %6$s %7$s and the part becomes %8$s!",
 				"somebody", definite_name, target.definite_name,
 				target.possesive_pronoun, body_.getPartName(part),
@@ -329,13 +450,13 @@ abstract class Actor
 	{
 		string damage_str = target.body_.getDamageStr(part);
 		if (damage_str == prev_damage_str) {
-			map.game.sendVisibleEventMsg([pos, target.pos],
-				Color.red, true, "%2(1)|1$s hits %3(2)|1$s in %4$s %5$s!",
+			map.game.sendVisibleEventMsg([pos, target.pos], Color.red, true,
+				"%2(1)|1$s hits %3(2)|1$s in %4$s %5$s!",
 				"somebody", definite_name, target.definite_name,
 				target.possesive_pronoun, body_.getPartName(part));
 		} else {
-			map.game.sendVisibleEventMsg([pos, target.pos],
-				Color.red, true, "%2(1)|1$s hits %3(2)|1$s in %4$s %5$s"
+			map.game.sendVisibleEventMsg([pos, target.pos], Color.red, true,
+				"%2(1)|1$s hits %3(2)|1$s in %4$s %5$s"
 				~" and the part becomes %6$s",
 				"somebody", definite_name, target.definite_name,
 				target.possesive_pronoun, body_.getPartName(part), damage_str);
@@ -344,14 +465,47 @@ abstract class Actor
 
 	protected void actHitSendMissMsg(const Actor target, int part)
 	{
-		map.game.sendVisibleEventMsg(target.x, target.y,
-			Color.red, false, "%1$s misses %2$s", definite_name,
+		map.game.sendVisibleEventMsg(target.x, target.y, Color.red, false,
+			"%1$s misses %2$s", definite_name,
 			target.definite_name);
 	}
 
-	bool actHit(Point p)
+	bool actShoot(int x, int y)
 		in(map !is null)
-		{ return actHit(p.x, p.y); }
+	{
+		if (weapon_index == -1 || !items[weapon_index].can_shoot
+		|| items[weapon_index].loaded_ammo.length == 0) {
+			return false;
+		}
+
+		loaded_ammo.removeBack();
+		map.game.sendVisibleEventMsg([pos], Color.red, true,
+			"%1$s fires %2$s %3$s", name, possesive_pronoun,
+			items[weapon_index].name);
+		//return items[weapon_index].shoot(map, x, y);
+	}
+	bool actShoot(Point p)
+		in(map !is null)
+		{ return actShoot(p.x, p.y); }*/
+
+
+	bool rollWhetherUnarmedHitImpacts(Actor hittee)
+		in(hittee !is null)
+	{
+		return
+			sigmoidChance(hit_chance_bonus-hittee.evasion_chance_bonus);
+	}
+
+	Strike rollUnarmedHitStrike()
+	{
+		// TODO: Take account for unarmed fighting skills.
+		Strike strike;
+		foreach (int i, ref e; strike) {
+			e = uniform!"[]"(0, scaledSigmoid(body_.unarmed_hit_max_strike[i],
+				hit_damage_bonus));
+		}
+		return strike;
+	}
 
 	float getDistance(int x, int y) const /*pure*/
 		{ return sqrt(cast(float)((x-this.x)^^2+(y-this.y)^^2)); }

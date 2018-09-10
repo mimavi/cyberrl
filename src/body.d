@@ -22,7 +22,8 @@ struct Strike
 	int[DamageType.max+1] damages;
 	alias damages this;
 
-	@property bool is_null()
+	// Possibly very slow...
+	@property bool is_null() const
 	{
 		foreach (e; this) {
 			if (e != 0) {
@@ -55,7 +56,7 @@ abstract class Body
 	}
 	@property Stats stats() const { return _stats; }
 
-	@property Strike unarmed_max_strike() const /*pure*/
+	@property Strike unarmed_hit_max_strike() const /*pure*/
 	{
 		Strike strike;
 		strike[DamageType.blunt] = 10;
@@ -64,7 +65,6 @@ abstract class Body
 	@property int dexterity_mod() const /*pure*/ { return 0; }
 	@property int agility_mod() const /*pure*/ { return 0; }
 
-	//this(Actor actor) { this.items = &actor.items; }/*pure*/
 	this() {}
 	this(Serializer serializer) /*pure*/ {}
 
@@ -139,7 +139,6 @@ class HumanFleshyBody : FleshyBody
 		return 0;
 	}
 
-	//this(Actor actor) /*pure*/ { super(actor); }
 	this() { super(); }
 	this(Serializer serializer) /*pure*/ { super(serializer); }
 

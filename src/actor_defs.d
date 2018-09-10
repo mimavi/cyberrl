@@ -3,7 +3,7 @@ import util;
 import ser;
 import term;
 import ai;
-import item;
+import item_defs;
 import body;
 
 class LightsamuraiAiActor : AiActor
