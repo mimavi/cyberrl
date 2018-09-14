@@ -1,4 +1,5 @@
 import std.algorithm.comparison;
+import std.math;
 import std.conv;
 import std.container;
 import std.format;
@@ -35,15 +36,15 @@ class Game
 {
 	mixin Serializable;
 
-	enum camera_x_margin = 1;
-	enum camera_y_margin = 2;
-	enum camera_width = 21;
-	enum camera_height = 21;
-	enum msg_x_margin = 24;
-	enum msg_y_margin = 3;
-	enum msg_display_width = term_width-msg_x_margin;
-	enum msg_display_height = term_height-msg_y_margin;
-	//enum body_parts_text_x = msg_x_margin;
+	enum viewport_x = 1;
+	enum viewport_y = 2;
+	enum viewport_width = 21;
+	enum viewport_height = 21;
+	enum msg_display_x = 24;
+	enum msg_display_y = 3;
+	enum msg_display_width = term_width-msg_display_x;
+	enum msg_display_height = term_height-msg_display_y;
+	//enum body_parts_text_x = msg_display_x;
 	//enum body_parts_text_y = 1;
 	//enum body_part_text_width = 11;
 
@@ -110,8 +111,8 @@ class Game
 	// and making the `map` module independent of the `term` module?
 	void draw()
 	{
-		map.draw(camera_x, camera_y, camera_x_margin, camera_y_margin,
-			camera_width, camera_height);
+		map.draw(camera_x, camera_y, viewport_x, viewport_y,
+			viewport_width, viewport_height);
 
 		term.write(0, 0, player.player_name, Color.white, true);
 		player.drawBodyStatus();
@@ -124,12 +125,12 @@ class Game
 				str = str[0..$]~".";
 			}
 			auto lines = splitAtSpaces(str, msg_display_width);
-			int y = msg_y_margin+msg_display_height-cast(int)lines.length;
+			int y = msg_display_y+msg_display_height-cast(int)lines.length;
 			int index = cast(int)msgs.length-1;
-			while (y+lines.length-1 >= msg_y_margin) {
+			while (y+lines.length-1 >= msg_display_y) {
 				foreach (int i, string e; lines) {
-					if (y+i >= msg_y_margin) {
-						term.write(msg_x_margin, y+i, e,
+					if (y+i >= msg_display_y) {
+						term.write(msg_display_x, y+i, e,
 								msgs[index].color, msgs[index].is_bright);
 					}
 				}
@@ -151,7 +152,7 @@ class Game
 		//foreach (int i, Msg e; msgs) {
 		//foreach (i; 0..min(msgs.length, msg_display_height)) {
 			/*auto msg = msgs[$-i-1];
-			term.write(msg_x_margin, msg_y_margin+msg_display_height-i-1, 
+			term.write(msg_display_x, msg_display_y+msg_display_height-i-1, 
 				msg.str, msg.color, msg.is_bright,
 				msg_display_width);*/
 		//}
@@ -164,24 +165,6 @@ class Game
 			auto msg = msgs[$-i-1];
 			i += lines.length;
 		} while (i < min(msgs.length, msg_display_height));*/
-	}
-
-	void centerizeCamera(int x, int y) /*pure*/
-	{
-		camera_x = x-camera_width/2;
-		camera_y = y-camera_height/2;
-	}
-
-	static ulong filenameToId(string filename) /*pure*/
-	{
-		// Remove leading "saves/" and trailing ".json",
-		// then convert to `int`.
-		return to!int(filename[6..$][0..$-5]);
-	}
-
-	static string idToFilename(ulong id) /*pure*/
-	{
-		return "saves/"~to!string(id)~".json";
 	}
 
 	// Note: The first character in resulting sentence
@@ -231,5 +214,39 @@ class Game
 			//menu.sendMsg(msg, color, is_bright);
 			msgs.insertBack(Msg(fmt, args.dup, color, is_bright));
 		}*/
+	}
+
+	void centerizeCamera(int x, int y) /*pure*/
+	{
+		camera_x = x-viewport_width/2;
+		camera_y = y-viewport_height/2;
+	}
+	void centerizeCamera(Point p) { centerizeCamera(p.x, p.y); }
+
+	bool setSymbolOnViewport(int x, int y, Symbol symbol)
+	{
+		if (abs(x-camera_x-viewport_width/2) >= viewport_width/2
+		|| abs(y-camera_y-viewport_height/2) >= viewport_height/2) {
+			return false;
+		}
+		term.setSymbol(viewport_x+x-camera_x,
+			viewport_y+y-camera_y, symbol);
+		return true;
+	}
+	bool setSymbolOnViewport(Point p, Symbol symbol)
+	{
+		return setSymbolOnViewport(p.x, p.y, symbol);
+	}
+
+	static ulong filenameToId(string filename) /*pure*/
+	{
+		// Remove leading "saves/" and trailing ".json",
+		// then convert to `int`.
+		return to!int(filename[6..$][0..$-5]);
+	}
+
+	static string idToFilename(ulong id) /*pure*/
+	{
+		return "saves/"~to!string(id)~".json";
 	}
 }

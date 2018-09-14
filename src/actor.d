@@ -48,12 +48,7 @@ abstract class Actor
 	@property string definite_name() const /*pure*/ { return "the "~name; }
 	@property string indefinite_name() const /*pure*/
 	{
-		if (name[0] == 'a' || name[0] == 'e' || name[0] == 'o'
-		|| name[0] == 'u' || name[0] == 'i') {
-			return "an "~name;
-		} else {
-			return "a "~name;
-		}
+		return prependIndefiniteArticle(name);
 	}
 	@property string possesive_pronoun() const /*pure*/
 	{
@@ -102,6 +97,11 @@ abstract class Actor
 	{
 		return stats[Stat.strength]
 			+ stats[Stat.striking];
+	}
+
+	@property int shoot_aim_bonus() const
+	{
+		return stats[Stat.dexterity] + stats[Stat.aiming];
 	}
 
 	@property int x() const /*pure*/ { return _x; }
@@ -355,7 +355,6 @@ abstract class Actor
 	}
 
 	void onUnarmedHitMiss(int x, int y) { onHitMiss(x, y); }
-	//void onUnarmedHitNothing(int x, int y) { onHitNothing(x, y); }
 
 	bool actShoot(int x, int y)
 		in(map !is null)
@@ -365,6 +364,7 @@ abstract class Actor
 		}
 		return false;
 	}
+	bool actShoot(Point p) { return actShoot(p.x, p.y); }
 
 	void onTryShootWeaponCantShoot(int x, int y)
 	{
@@ -373,121 +373,6 @@ abstract class Actor
 	void onTryShootNoLoadedAmmo(int x, int y)
 	{
 	}
-
-	/*bool actHit(int x, int y)
-		in(map !is null)
-	{
-		auto target = map.getTile(x, y).actor;
-
-		if (target is null) {
-			return false;
-		}
-
-
-		// TODO: Weapon skills and unarmed fighting skills should also affect
-		// probability of hitting.
-		if (sigmoidChance(hit_chance_bonus-target.evasion_chance_bonus)) {
-			string prev_damage_str = target.body_.getDamageStr(part);
-			// Hit with a weapon.
-			if (weapon_index != -1 && items[weapon_index].can_hit) {
-
-				auto weapon = items[weapon_index];
-				Strike strike;
-				foreach (int i, ref e; strike) {
-					e = uniform!"[]"(0, scaledSigmoid(weapon.hit_max_strike[i],
-						hit_damage_bonus+weapon.hit_damage_bonus));
-				}
-
-				target.body_.dealStrike(part, strike);
-				actHitSendHitMsg(target, part, prev_damage_str);
-			// Hit unarmed.
-			} else {
-				Strike strike;
-				foreach (int i, ref e; strike) {
-					e = uniform!"[]"(0, scaledSigmoid(body_.unarmed_max_strike[i],
-						hit_damage_bonus));
-				}
-
-				target.body_.dealStrike(part, strike);
-				actHitSendUnarmedHitMsg(target, part, prev_damage_str);
-			}
-			// For now, you cannot hit without a weapon.
-			// TODO: Change this.
-		} else {
-			actHitSendMissMsg(target, part);
-		}
-
-		ap -= base_ap_cost - dexterity_ap_weight*stats[Stat.dexterity];
-		return true;
-	}
-	bool actHit(Point p)
-		in(map !is null)
-		{ return actHit(p.x, p.y); }
-
-	protected void actHitSendHitMsg(const Actor target, int part,
-		string prev_damage_str)
-	{
-		string damage_str = target.body_.getDamageStr(part);
-		if (damage_str == prev_damage_str) {
-			map.game.sendVisibleEventMsg([pos, target.pos], Color.red, true,
-				"%1(1)|2$s hits %3(2)|4$s in %5$s %6$s"
-				~" with %7$s %8$s!",
-				definite_name, "somebody", target.definite_name, "somebody",
-				target.possesive_pronoun, body_.getPartName(part),
-				possesive_pronoun, items[weapon_index].name);
-		} else {
-			map.game.sendVisibleEventMsg([pos, target.pos], Color.red, true,
-				"%2(1)|1$s hits %3(2)|1$s in %4$s %5$s"
-				~" with %6$s %7$s and the part becomes %8$s!",
-				"somebody", definite_name, target.definite_name,
-				target.possesive_pronoun, body_.getPartName(part),
-				possesive_pronoun, items[weapon_index].name, damage_str);
-		}
-	}
-
-	protected void actHitSendUnarmedHitMsg(const Actor target, int part,
-		string prev_damage_str)
-	{
-		string damage_str = target.body_.getDamageStr(part);
-		if (damage_str == prev_damage_str) {
-			map.game.sendVisibleEventMsg([pos, target.pos], Color.red, true,
-				"%2(1)|1$s hits %3(2)|1$s in %4$s %5$s!",
-				"somebody", definite_name, target.definite_name,
-				target.possesive_pronoun, body_.getPartName(part));
-		} else {
-			map.game.sendVisibleEventMsg([pos, target.pos], Color.red, true,
-				"%2(1)|1$s hits %3(2)|1$s in %4$s %5$s"
-				~" and the part becomes %6$s",
-				"somebody", definite_name, target.definite_name,
-				target.possesive_pronoun, body_.getPartName(part), damage_str);
-		}
-	}
-
-	protected void actHitSendMissMsg(const Actor target, int part)
-	{
-		map.game.sendVisibleEventMsg(target.x, target.y, Color.red, false,
-			"%1$s misses %2$s", definite_name,
-			target.definite_name);
-	}
-
-	bool actShoot(int x, int y)
-		in(map !is null)
-	{
-		if (weapon_index == -1 || !items[weapon_index].can_shoot
-		|| items[weapon_index].loaded_ammo.length == 0) {
-			return false;
-		}
-
-		loaded_ammo.removeBack();
-		map.game.sendVisibleEventMsg([pos], Color.red, true,
-			"%1$s fires %2$s %3$s", name, possesive_pronoun,
-			items[weapon_index].name);
-		//return items[weapon_index].shoot(map, x, y);
-	}
-	bool actShoot(Point p)
-		in(map !is null)
-		{ return actShoot(p.x, p.y); }*/
-
 
 	bool rollWhetherUnarmedHitImpacts(Actor hittee)
 		in(hittee !is null)

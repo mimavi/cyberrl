@@ -1,4 +1,4 @@
-import iteration = std.algorithm.iteration;
+//import iteration = std.algorithm.iteration;
 import std.functional;
 import std.container;
 import std.random;
@@ -9,6 +9,7 @@ import ser;
 import term;
 import game;
 import tile;
+import tile_defs;
 import actor;
 import item;
 
@@ -173,7 +174,7 @@ class Map
 
 	// TODO: Take movement speed dependency on tile type into consideration.
 	Point[] findPath(int source_x, int source_y, int target_x, int target_y,
-		bool delegate(int, int) get_is_passable,
+		bool delegate(int, int) get_is_blocking,
 		Point[8] delegate(int, int) get_next_coords)
 	{
 		// XXX: Is this a stack??? Consider renaming it to `queue`...
@@ -192,7 +193,7 @@ class Map
 				// Target tile need not be passable
 				// to be reachable in this routine.
 				if (ee.x == target_x && ee.y == target_y) {
-					if (!get_is_passable(ee.x, ee.y)) {
+					if (get_is_blocking(ee.x, ee.y)) {
 						return [];
 					}
 
@@ -208,7 +209,7 @@ class Map
 					return result;
 				}
 
-				if (get_is_passable(ee.x, ee.y)
+				if (!get_is_blocking(ee.x, ee.y)
 				&& steps[ee.x+ee.y*width] == 0) {
 					links[ee.x+ee.y*width] = Point(e.x, e.y);
 					steps[ee.x+ee.y*width] = steps[e.x+e.y*width]+1;
@@ -219,17 +220,16 @@ class Map
 		}
 		return [];
 	}
-
 	Point[] findPath(int source_x, int source_y, int target_x, int target_y)
 	{
 		return findPath(source_x, source_y, target_x, target_y,
-			&findPathGetIsPassable,
+			&findPathGetIsBlocking,
 			&findPathGetNextCoords);
 	}
 
-	bool findPathGetIsPassable(int x, int y)
+	bool findPathGetIsBlocking(int x, int y)
 	{
-		return getTile(x, y).is_walkable;
+		return !getTile(x, y).is_walkable;
 	}
 
 	Point[8] findPathGetNextCoords(int x, int y)
@@ -248,7 +248,69 @@ class Map
 		return ordered_points;
 	}
 
-	// TODO: Make it flood diagonally as well.
+	// The algorithm is based on Bresenham line algorithm.
+	// XXX: Perhaps use ranges instead of just returning an array?
+	// TODO: Add output contract for `length` of result.
+	Point[] castRay(int source_x, int source_y, int target_x, int target_y,
+		bool delegate(int, int) get_is_blocking)
+		//out(result) (result.length >= 1)
+	{
+		Point[] result;
+		int err = 0;
+		int dx = target_x-source_x;
+		int dy = target_y-source_y;
+
+		if (abs(target_x-source_x) >= abs(target_y-source_y)) {
+			int y = source_y;
+			foreach (i; 0..(abs(dx)+1)) {
+				int x = source_x+i*sgn(dx);
+				++result.length;
+				result[$-1] = Point(x, y);
+
+				if (get_is_blocking(x, y)) {
+					return result;
+				}
+
+				if (2*(err+abs(dy)) < abs(dx)) {
+					err = err+abs(dy);
+				} else {
+					err = err+abs(dy)-abs(dx);
+					y += sgn(dy);
+				}
+			}
+		} else {
+			int x = source_x;
+			foreach (i; 0..(abs(dy)+1)) {
+				int y = source_y+i*sgn(dy);
+				++result.length;
+				result[$-1] = Point(x, y);
+
+				if (get_is_blocking(x, y)) {
+					return result;
+				}
+
+				if (2*(err+abs(dx)) < abs(dy)) {
+					err = err+abs(dx);
+				} else {
+					err = err+abs(dx)-abs(dy);
+					x += sgn(dx);
+				}
+			}
+		}
+		return result;
+	}
+	Point[] castRay(Point source_p, Point target_p,
+		bool delegate(int, int) get_is_blocking)
+	{
+		return castRay(source_p.x, source_p.y, target_p.x, target_p.y,
+			get_is_blocking);
+	}
+
+	bool castRayGetIsblocking(int x, int y)
+	{
+		return getTile(x, y).is_walkable;
+	}
+
 	void floodfill(int x, int y, bool delegate(int, int) fill)
 	{
 		// XXX: Perhaps a linked list could perform better here.

@@ -288,6 +288,16 @@ int getSplitAtSpace(string str, int width)
 	return -1;
 }
 
+string prependIndefiniteArticle(string name)
+{
+	if (name[0] == 'a' || name[0] == 'e'
+	|| name[0] == 'i' || name[0] == 'o'
+	|| name[0] == 'u') {
+		return "an "~name;
+	}
+	return "a "~name;
+}
+
 // Return unsigned remainder.
 Signed!T1 umod(T1, T2)(T1 dividend, T2 divisor)
 {
@@ -322,7 +332,7 @@ bool sigmoidChance(int x)
 // The return value approaches `scale` as `x` approaches positive infinity;
 // approaches 0 as `x` approaches negative infinity;
 // is equal to 0.5 when `x == 0`.
-int scaledSigmoid(int scale, int x)
+T scaledSigmoid(T)(T scale, T x)
 {
 	return scale*(1+x+abs(x))/(2+2*abs(x));
 }

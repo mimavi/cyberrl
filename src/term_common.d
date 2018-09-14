@@ -5,10 +5,9 @@ import term;
 import ser;
 
 // TODO: Use input contracts in this module.
-// TODO: Use `uuint` instead of `uint` for terminal coords.
 
-immutable uint term_width = 80;
-immutable uint term_height = 24;
+immutable int term_width = 80;
+immutable int term_height = 24;
 
 Symbol[term_width*term_height] symbol_array;
 
@@ -80,10 +79,10 @@ struct Symbol
 
 /*struct TermWriter
 {
-	uint x, y;
+	int x, y;
 	Symbol[] symbols;
 
-	this(uint x, uint y)
+	this(int x, int y)
 	{
 		this.x = x;
 		this.y = y;
@@ -112,7 +111,7 @@ class TermException : Exception
 	}
 }
 
-void setSymbol(uint x, uint y, Symbol symbol)
+void setSymbol(int x, int y, Symbol symbol)
 	in(x < term_width && y < term_height)
 {
 	/*if (x >= term_width || y >= term_height || x < 0 || y < 0) {
@@ -122,7 +121,7 @@ void setSymbol(uint x, uint y, Symbol symbol)
 	symbol_array[x+y*term_width] = symbol;
 }
 
-Symbol getSymbol(uint x, uint y)
+Symbol getSymbol(int x, int y)
 	in(x < term_width && y < term_height)
 {
 	/*if (x >= term_width || y >= term_height || x < 0 || y < 0) {
@@ -132,75 +131,75 @@ Symbol getSymbol(uint x, uint y)
 	return symbol_array[x+y*term_width];
 }
 
-void write(uint x, uint y, string str,
+void write(int x, int y, string str,
 	Color color,
 	Color bg_color,
 	bool is_bright,
-	uint width)
+	int width)
 {
 	string[] lines = splitAtSpaces(str, width);
-	foreach (uint i, string e; lines) {
-		foreach (uint j, char c; e) {
+	foreach (int i, string e; lines) {
+		foreach (int j, char c; e) {
 			setSymbol(x+j, y+i, Symbol(c, color, bg_color, is_bright));
 		}
-		foreach (uint j; cast(uint)e.length..width) {
+		foreach (int j; cast(int)e.length..width) {
 			setSymbol(x+j, y+i, Symbol(' '));
 		}
 	}
 }
 
-void write(uint x, uint y, string str,
+void write(int x, int y, string str,
 	Color color = Color.white,
 	Color bg_color = Color.black,
 	bool is_bright = false)
 {
-	write(x, y, str, color, bg_color, is_bright, cast(uint)str.length);
+	write(x, y, str, color, bg_color, is_bright, cast(int)str.length);
 }
 
-void write(uint x, uint y, string str, bool is_bright, uint width)
+void write(int x, int y, string str, bool is_bright, int width)
 {
 	write(x, y, str, Color.white, Color.black, is_bright, width);
 }
 
-void write(uint x, uint y, string str, bool is_bright)
+void write(int x, int y, string str, bool is_bright)
 {
 	write(x, y, str, Color.white, Color.black, is_bright);
 }
 
-void write(uint x, uint y, string str, Color color, bool is_bright,
-	uint width)
+void write(int x, int y, string str, Color color, bool is_bright,
+	int width)
 {
 	write(x, y, str, color, Color.black, is_bright, width);
 }
 
-void write(uint x, uint y, string str, Color color, bool is_bright)
+void write(int x, int y, string str, Color color, bool is_bright)
 {
 	write(x, y, str, color, Color.black, is_bright);
 }
 
 // TODO: Format string as template argument.
 
-void writef(A...)(uint x, uint y, string fmt, Color color, Color bg_color,
-	bool is_bright, uint width, A args)
+void writef(A...)(int x, int y, string fmt, Color color, Color bg_color,
+	bool is_bright, int width, A args)
 {
 	auto str = format(fmt, args);
 	write(x, y, str, color, bg_color, is_bright, width);
 }
 
-void writef(A...)(uint x, uint y, string fmt, Color color, bool is_bright,
-	uint width, A args)
+void writef(A...)(int x, int y, string fmt, Color color, bool is_bright,
+	int width, A args)
 {
 	writef(x, y, fmt, color, Color.black, is_bright, width, args);
 }
 
-void writef(A...)(uint x, uint y, string fmt, Color color, Color bg_color,
-	uint width, A args)
+void writef(A...)(int x, int y, string fmt, Color color, Color bg_color,
+	int width, A args)
 {
 	writef(x, y, fmt, color, bg_color, false, width, args);
 }
 
-void writef(A...)(uint x, uint y, string fmt, Color color,
-	uint width, A args)
+void writef(A...)(int x, int y, string fmt, Color color,
+	int width, A args)
 {
 	writef(x, y, fmt, color, Color.black, false, width, args);
 }

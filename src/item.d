@@ -1,5 +1,6 @@
 import std.container;
 import std.random;
+import std.math;
 import util;
 import ser;
 import term;
@@ -22,6 +23,7 @@ abstract class Item
 	@property int hit_chance_bonus() const { return 0; }
 
 	@property Strike shoot_max_strike() const { return Strike(); }
+	@property double shoot_max_spread() const { return PI_2; }
 	@property int shoot_hit_chance_bonus() const { return 0; }
 
 	@property int ammo_damage_bonus() const { return 0; }
@@ -106,6 +108,25 @@ abstract class Item
 	void shoot(Actor shooter, int x, int y)
 		in(shooter !is null)
 	{
+		bool shootGetIsBlocking(int x, int y)
+		{
+			auto tile = shooter.map.getTile(x, y);
+			return !tile.is_walkable || (tile.actor !is null);
+		}
+
+		double targetAngle = atan2(cast(double)(y-shooter.y),
+			cast(double)(x-shooter.x));
+		double angleError = rollShootAngleError(shooter, x, y);
+		double angle = targetAngle+angleError;
+		int new_x = cast(int)round((x+0.5)*cos(angle)-(y+0.5)*sin(angle));
+		int new_y = cast(int)round((x+0.5)*sin(angle)+(y+0.5)*cos(angle));
+
+		Point[] ray = shooter.map.castRay(shooter.x, shooter.y, new_x, new_y,
+			&shootGetIsBlocking);
+		foreach (e; ray) {
+			//import tile;
+			//shooter.map.getTile(x, y) = new MarkerFloorTile(Color.blue);
+		}
 	}
 
 	bool rollWhetherHitImpacts(Actor hitter, Actor hittee)
@@ -127,5 +148,12 @@ abstract class Item
 				hit_damage_bonus+hitter.hit_damage_bonus));
 		}
 		return strike;
+	}
+
+	double rollShootAngleError(Actor shooter, int x, int y)
+	{
+		double spread =
+			scaledSigmoid(shoot_max_spread, -shooter.shoot_aim_bonus);
+		return uniform!"[]"(-spread, spread);
 	}
 }

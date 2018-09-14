@@ -1,3 +1,5 @@
+// TODO: Add contracts.
+
 module term;
 
 import std.format;
@@ -338,12 +340,12 @@ void refresh()
 	SDL_RenderPresent(renderer);
 }
 
-void setSymbol(uint x, uint y, Symbol symbol)
+void setSymbol(int x, int y, Symbol symbol)
 {
 	symbol_array[x+y*term_width] = symbol;
 }
 
-Symbol getSymbol(uint x, uint y)
+Symbol getSymbol(int x, int y)
 {
 	return symbol_array[x+y*term_width];
 }

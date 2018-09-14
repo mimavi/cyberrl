@@ -4,12 +4,17 @@ import main;
 import menu;
 import ser;
 import term;
+//import game;
 import tile;
 import actor;
 import body;
 
 class PlayerActor : Actor
 {
+	// TODO: Add contracts for `map` and `map.game`.
+	//invariant(map !is null);
+	//invariant(map.game !is null);
+
 	mixin InheritedSerializable;
 
 	enum body_parts_text_x = 24;
@@ -100,6 +105,55 @@ class PlayerActor : Actor
 				index)) {
 					has_acted = actWield(index);
 				}
+			} else if (key == Key.f) {
+				Point[] ray;
+				bool getIsBlocking(int x, int y)
+				{
+					auto tile = map.getTile(x, y);
+					return !tile.is_walkable || ((tile.actor !is null)
+					&& tile.actor != this);
+				}
+				void drawShootLook(int x, int y)
+				{
+					bool has_passed_thru_not_visible = false;
+					ray = map.castRay(this.x, this.y, x, y, &getIsBlocking);
+					if (ray.length == 1) {
+						map.game.setSymbolOnViewport(this.pos,
+							Symbol('X', Color.green, true));
+						return;
+					}
+
+					foreach (int i, e; ray[1..$-1]) {
+						/*term.setSymbol(Game.viewport_x_margin+Game.viewport_width/2,
+							Game.viewport_y_margin+Game.viewport_height/2,
+							Symbol('X', Color.green, true));*/
+						if (!map.getTile(e).is_visible) {
+							has_passed_thru_not_visible = true;
+							break;
+						}
+						map.game.setSymbolOnViewport(e, Symbol('X', Color.green, false));
+					}
+
+					if (!has_passed_thru_not_visible
+					&& map.getTile(ray[$-1]).is_visible) {
+						map.game.setSymbolOnViewport(ray[$-1],
+							Symbol('X', Color.green, true));
+					}
+
+					if (ray[$-1] != Point(x, y)) {
+						map.game.setSymbolOnViewport(x, y,
+							Symbol('X', Color.yellow, true));
+					}
+				}
+
+				Point target = menu.selectTile(map.game, &drawShootLook);
+			} else if (key == Key.l) {
+				void drawLook(int x, int y)
+				{
+					map.game.setSymbolOnViewport(x, y, Symbol('X', Color.green, true));
+				}
+
+				menu.selectTile(map.game, &drawLook);
 			} else if (key == Key.period) {
 				has_acted = actWait();
 			}
@@ -216,72 +270,4 @@ class PlayerActor : Actor
 				hittee.possesive_pronoun, body_.getPartName(part), damage_str);
 		}
 	}
-
-	/*protected override void actHitSendHitMsg(const Actor target, int part,
-		string prev_damage_str)
-		/*pure*/
-	/*{
-		string damage_str = target.body_.getDamageStr(part);
-		if (damage_str == prev_damage_str) {
-			map.game.sendVisibleEventMsg([pos, target.pos],
-				Color.white, true, "%1(1)|2$s hit %3(2)|4$s in %5$s %6$s"
-				~" with %7$s %8$s!",
-				definite_name, "somebody", target.definite_name, "somebody",
-				target.possesive_pronoun, body_.getPartName(part),
-				possesive_pronoun, items[weapon_index].name);
-		} else {
-			map.game.sendVisibleEventMsg([pos, target.pos],
-				Color.white, true, "%2(1)|1$s hit %3(2)|1$s in %4$s %5$s"
-				~" with %6$s %7$s and the part becomes %8$s!",
-				"somebody", definite_name, target.definite_name,
-				target.possesive_pronoun, body_.getPartName(part),
-				possesive_pronoun, items[weapon_index].name, damage_str);
-		}
-	}
-
-	protected override void actHitSendUnarmedHitMsg(const Actor target,
-		int part, string prev_damage_str)
-	{
-		string damage_str = target.body_.getDamageStr(part);
-		if (damage_str == prev_damage_str) {
-			map.game.sendVisibleEventMsg([pos, target.pos],
-				Color.white, true, "%2(1)|1$s hit %3(2)|1$s in %4$s %5$s!",
-				"somebody", definite_name, target.definite_name,
-				target.possesive_pronoun, body_.getPartName(part));
-		} else {
-			map.game.sendVisibleEventMsg([pos, target.pos],
-				Color.white, true, "%2(1)|1$s hit %3(2)|1$s in %4$s %5$s"
-				~" and the part becomes %6$s",
-				"somebody", definite_name, target.definite_name,
-				target.possesive_pronoun, body_.getPartName(part), damage_str);
-		}
-	}
-
-	protected override void actHitSendMissMsg(const Actor target, int part)
-		/*pure*/
-	/*{
-		map.game.sendVisibleEventMsg([pos, target.pos],
-			Color.white, false, "%2(1)|1$s miss %3(2)|1$s",
-			"somebody", definite_name, target.definite_name);
-			//definite_name, "somebody", target.definite_name, "somebody");
-	}*/
-
-	/*private bool drawBodyStatusDamageToBright(int damage, int max_damage)
-		const /*pure*/
-	/*{
-		int percentage = damage*100/max_damage;
-		if (percentage == 100) {
-			return true;
-		} else if (percentage >= 75) {
-			return false;
-		} else if (percentage >= 50) {
-			return true;
-		} else if (percentage >= 25) {
-			return true;
-		} else if (percentage > 0) {
-			return false;
-		} else {
-			return true;
-		}
-	}*/
 }

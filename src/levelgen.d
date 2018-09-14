@@ -3,7 +3,7 @@ import std.functional;
 import std.random;
 import util;
 import map;
-import tile;
+import tile_defs;
 
 // TODO: Clean up.
 // TODO: Replace it completely with something better.

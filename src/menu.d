@@ -408,3 +408,29 @@ void drawSelectItem(Array!Item items, string[int] appends, string header,
 		}
 	}
 }
+
+Point selectTile(Game game, void delegate(int, int) draw)
+{
+	int dx = 0, dy = 0;
+	Key key;
+
+	do {
+		game.centerizeCamera(game.player.x+dx, game.player.y+dy);
+		game.draw();
+
+		draw(game.player.x+dx, game.player.y+dy);
+		auto tile = game.map.getTile(game.player.x+dx, game.player.y+dy);
+		if (tile.is_visible) {
+			term.write(0, term_height-1, tile.displayed_name, Color.white, true);
+		} else {
+			term.write(0, term_height-1, "not visible", Color.black, true);
+		}
+
+		key = term.readKey();
+		dx += key_to_point[key].x;
+		dy += key_to_point[key].y;
+	} while (key != Key.escape && key != Key.enter);
+
+	game.centerizeCamera(game.player.pos);
+	return Point(game.player.x+dx, game.player.y+dy);
+}
