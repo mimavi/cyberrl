@@ -22,6 +22,7 @@ import body;
 import stat;
 import player;
 import item;
+import item_defs;
 import ser;
 
 // TODO: Function that will cover both `mainMenu()` and `inGameMenu()`.
@@ -103,6 +104,8 @@ bool newGameMenu()
 	//main_game.player = new PlayerActor;
 	//main_game.player.items.insertBack(new LightkatanaItem);
 	PlayerActor player = new PlayerActor;
+	player.items.insertBack(new PistolItem);
+	player.items.insertBack(new LightkatanaItem);
 
 	do {
 		if (key == Key.digit_4) {
@@ -409,10 +412,10 @@ void drawSelectItem(Array!Item items, string[int] appends, string header,
 	}
 }
 
-Point selectTile(Game game, void delegate(int, int) draw)
+Point selectTile(Game game, ref Key key, void delegate(int, int) draw,
+	bool delegate(int, int, Key) get_is_terminated)
 {
 	int dx = 0, dy = 0;
-	Key key;
 
 	do {
 		game.centerizeCamera(game.player.x+dx, game.player.y+dy);
@@ -429,8 +432,29 @@ Point selectTile(Game game, void delegate(int, int) draw)
 		key = term.readKey();
 		dx += key_to_point[key].x;
 		dy += key_to_point[key].y;
-	} while (key != Key.escape && key != Key.enter);
+	} while (!get_is_terminated(game.player.x+dx, game.player.y+dy, key));
+	//} while (key != Key.escape && key != Key.enter);
 
 	game.centerizeCamera(game.player.pos);
 	return Point(game.player.x+dx, game.player.y+dy);
+}
+Point selectTile(Game game, void delegate(int, int) draw,
+	bool delegate(int, int, Key) get_is_terminated)
+{
+	Key key;
+	return selectTile(game, key, draw, get_is_terminated);
+}
+Point selectTile(Game game, ref Key key, void delegate(int, int) draw)
+{
+	return selectTile(game, key, draw, toDelegate(&selectTileGetIsTerminated));
+}
+Point selectTile(Game game, void delegate(int, int) draw)
+{
+	Key key;
+	return selectTile(game, key, draw);
+}
+
+bool selectTileGetIsTerminated(int x, int y, Key key)
+{
+	return key == Key.escape || key == Key.enter;
 }

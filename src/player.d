@@ -106,54 +106,72 @@ class PlayerActor : Actor
 					has_acted = actWield(index);
 				}
 			} else if (key == Key.f) {
-				Point[] ray;
-				bool getIsBlocking(int x, int y)
-				{
-					auto tile = map.getTile(x, y);
-					return !tile.is_walkable || ((tile.actor !is null)
-					&& tile.actor != this);
-				}
-				void drawShootLook(int x, int y)
-				{
-					bool has_passed_thru_not_visible = false;
-					ray = map.castRay(this.x, this.y, x, y, &getIsBlocking);
-					if (ray.length == 1) {
-						map.game.setSymbolOnViewport(this.pos,
-							Symbol('X', Color.green, true));
-						return;
-					}
 
-					foreach (int i, e; ray[1..$-1]) {
-						/*term.setSymbol(Game.viewport_x_margin+Game.viewport_width/2,
-							Game.viewport_y_margin+Game.viewport_height/2,
-							Symbol('X', Color.green, true));*/
-						if (!map.getTile(e).is_visible) {
-							has_passed_thru_not_visible = true;
-							break;
+				if (weapon_index == -1) {
+					/*map.game.msgs.insertBack(
+						Msg("you have no weapon wielded to fire with",
+							[], Color.cyan, false));*/
+
+					map.game.sendMsg(Color.cyan, false, 
+						"you have no weapon wielded to fire with");
+				} else if (!items[weapon_index].can_shoot) {
+					map.game.sendMsg(Color.cyan, false,
+						"you cannot shoot with this weapon");
+				} else {
+					Point[] ray;
+					bool getIsBlocking(int x, int y)
+					{
+						auto tile = map.getTile(x, y);
+						return !tile.is_walkable || ((tile.actor !is null)
+						&& tile.actor != this);
+					}
+					void drawShootLook(int x, int y)
+					{
+						bool has_passed_thru_not_visible = false;
+						ray = map.castRay(this.x, this.y, x, y, &getIsBlocking);
+						if (ray.length == 1) {
+							map.game.setSymbolOnViewport(this.pos,
+								Symbol('X', Color.green, true));
+							return;
 						}
-						map.game.setSymbolOnViewport(e, Symbol('X', Color.green, false));
+						foreach (int i, e; ray[1..$-1]) {
+							if (!map.getTile(e).is_visible) {
+								has_passed_thru_not_visible = true;
+								break;
+							}
+							map.game.setSymbolOnViewport(
+								e, Symbol('X', Color.green, false));
+						}
+						if (!has_passed_thru_not_visible
+						&& map.getTile(ray[$-1]).is_visible) {
+							map.game.setSymbolOnViewport(ray[$-1],
+								Symbol('X', Color.green, true));
+						}
+						if (ray[$-1] != Point(x, y)) {
+							map.game.setSymbolOnViewport(x, y,
+								Symbol('X', Color.yellow, true));
+						}
+					}
+					bool getIsShootLookTerminated(int x, int y, Key key)
+					{
+						return key == Key.escape || key == Key.enter || key == Key.f;
 					}
 
-					if (!has_passed_thru_not_visible
-					&& map.getTile(ray[$-1]).is_visible) {
-						map.game.setSymbolOnViewport(ray[$-1],
-							Symbol('X', Color.green, true));
-					}
-
-					if (ray[$-1] != Point(x, y)) {
-						map.game.setSymbolOnViewport(x, y,
-							Symbol('X', Color.yellow, true));
-					}
+					auto target = menu.selectTile(
+						map.game, &drawShootLook, &getIsShootLookTerminated);
+					actShoot(target);
 				}
-
-				Point target = menu.selectTile(map.game, &drawShootLook);
 			} else if (key == Key.l) {
 				void drawLook(int x, int y)
 				{
 					map.game.setSymbolOnViewport(x, y, Symbol('X', Color.green, true));
 				}
+				bool getIsLookTerminated(int x, int y, Key key)
+				{
+					return key == Key.escape || key == Key.enter || key == Key.l;
+				}
 
-				menu.selectTile(map.game, &drawLook);
+				menu.selectTile(map.game, &drawLook, &getIsLookTerminated);
 			} else if (key == Key.period) {
 				has_acted = actWait();
 			}

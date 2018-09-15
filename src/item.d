@@ -30,7 +30,6 @@ abstract class Item
 	@property int ammo_hit_chance_bonus() const { return 0; }
 	@property string[] ammo_weapon_types() const { return []; }
 
-	//@property bool can_hit() const { return hit_max_strike.is_null; }
 	@property bool can_hit() const { return false; }
 	@property bool can_shoot() const { return false; }
 	@property bool is_throwable() const { return false; }
@@ -124,6 +123,7 @@ abstract class Item
 		Point[] ray = shooter.map.castRay(shooter.x, shooter.y, new_x, new_y,
 			&shootGetIsBlocking);
 		foreach (e; ray) {
+
 			//import tile;
 			//shooter.map.getTile(x, y) = new MarkerFloorTile(Color.blue);
 		}

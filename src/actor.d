@@ -155,6 +155,10 @@ abstract class Actor
 		map.getTile(_x, _y).actor = null;
 		initPos(x, y);
 	}
+	
+	// TODO: By default every action should have `base_ap_cost` as cost.
+	// It should be the responsibility of the action's implementation
+	// to modify that.
 
 	bool actWait()
 		in(map !is null)
@@ -240,6 +244,7 @@ abstract class Actor
 			return false;
 		}
 		weapon_index = index;
+		ap -= base_ap_cost - dexterity_ap_weight*stats[Stat.dexterity];
 		return true;
 	}
 
