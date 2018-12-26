@@ -253,8 +253,12 @@ class Map
 	// TODO: Add output contract for `length` of result.
 	Point[] castRay(int source_x, int source_y, int target_x, int target_y,
 		bool delegate(int, int) get_is_blocking)
-		//out(result) (result.length >= 1)
+	out (result; result.length >= 1)
 	{
+		if (source_x == target_x && source_y == target_y) {
+			return [Point(source_x, source_y)];
+		}
+
 		Point[] result;
 		int err = 0;
 		int dx = target_x-source_x;
@@ -262,7 +266,8 @@ class Map
 
 		if (abs(target_x-source_x) >= abs(target_y-source_y)) {
 			int y = source_y;
-			foreach (i; 0..(abs(dx)+1)) {
+			//foreach (i; 0..(abs(dx)+1)) {
+			for (int i = 0; ; ++i) {
 				int x = source_x+i*sgn(dx);
 				++result.length;
 				result[$-1] = Point(x, y);
@@ -280,7 +285,8 @@ class Map
 			}
 		} else {
 			int x = source_x;
-			foreach (i; 0..(abs(dy)+1)) {
+			//foreach (i; 0..(abs(dy)+1)) {
+			for (int i = 0; ; ++i) {
 				int y = source_y+i*sgn(dy);
 				++result.length;
 				result[$-1] = Point(x, y);
@@ -297,7 +303,7 @@ class Map
 				}
 			}
 		}
-		return result;
+		//return result;
 	}
 	Point[] castRay(Point source_p, Point target_p,
 		bool delegate(int, int) get_is_blocking)

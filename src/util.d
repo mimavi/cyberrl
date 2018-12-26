@@ -10,6 +10,40 @@ import std.stdio;
 import ser;
 import term;
 
+// Prevent aborting the executable if a cycle is detected.
+// Cycles are not harmful in our case,
+// since static constructors don't interact with each other.
+extern(C) __gshared string[] rt_options = ["oncycle=ignore"];
+
+extern(C) Object _d_newclass(TypeInfo_Class ci);
+
+/*Object dup(Object obj)
+{
+	if (obj is null)
+			return null;
+	ClassInfo ci = obj.classinfo;
+	size_t start = Object.classinfo.m_init.length;
+	size_t end = ci.m_init.length;
+	Object clone = _d_newclass(ci);
+	(cast(void*)clone)[start..end] = (cast(void*)obj)[start..end];
+	return clone;
+}*/
+
+T enclone(T)(T typed_obj)
+{
+	Object obj = cast(Object) typed_obj;
+
+	if (obj is null)
+			return null;
+	ClassInfo ci = obj.classinfo;
+	size_t start = Object.classinfo.m_init.length;
+	size_t end = ci.m_init.length;
+	Object clone = _d_newclass(ci);
+	(cast(void*)clone)[start..end] = (cast(void*)obj)[start..end];
+
+	return cast(T) clone;
+}
+
 // TODO: Add unittests.
 
 /*immutable int[Key.max+1] key_to_x = [
@@ -94,6 +128,19 @@ immutable char[chr_to_index.length] index_to_chr = [
 	60: '8', 61: '9',
 ];
 
+/*
+	Point(-1, 1): '/',
+	Point(0, 1): '|',
+	Point(1, 1): '\\',
+	Point(-1, 0): '-',
+	Point(0, 0): '*',
+	Point(1, 0): '-',
+	Point(-1, -1): '\\',
+	Point(0, -1): '|',
+	Point(1, -1): '/',
+];*/
+
+immutable char[Point] point_to_projectile_chr;
 immutable string[int] val_to_minus_5_to_5_adjective;
 immutable string[int] val_to_0_to_5_adjective;
 // XXX: Perhaps use array instead of associative array.
@@ -209,6 +256,17 @@ template hasAddress(alias T)
 
 static this()
 {
+	point_to_projectile_chr = [
+		Point(-1, 1): '/',
+		Point(0, 1): '|',
+		Point(1, 1): '\\',
+		Point(-1, 0): '-',
+		Point(0, 0): '*',
+		Point(1, 0): '-',
+		Point(-1, -1): '\\',
+		Point(0, -1): '|',
+		Point(1, -1): '/',
+	];
 	val_to_minus_5_to_5_adjective = [
 		-5: "extremely low",
 		-4: "incredibly low",
@@ -246,7 +304,7 @@ static this()
 	rng = Random(cast(uint)Clock.currTime().fracSecs().total!"hnsecs");
 }
 
-string[] splitAtSpaces(string str, int width)
+string[] splitAtSpaces(string str, int width) pure
 {
 	string[] results;
 	if (str.length <= width) {
@@ -268,7 +326,7 @@ string[] splitAtSpaces(string str, int width)
 }
 
 // Returns -1 if splitting fails.
-int getSplitAtSpace(string str, int width)
+int getSplitAtSpace(string str, int width) pure
 {
 	//if (str[width-1] != ' ' && str[width] != ' ') {
 	if (str.length < width) {
@@ -288,7 +346,7 @@ int getSplitAtSpace(string str, int width)
 	return -1;
 }
 
-string prependIndefiniteArticle(string name)
+string prependIndefiniteArticle(string name) pure
 {
 	if (name[0] == 'a' || name[0] == 'e'
 	|| name[0] == 'i' || name[0] == 'o'
@@ -299,7 +357,7 @@ string prependIndefiniteArticle(string name)
 }
 
 // Return unsigned remainder.
-Signed!T1 umod(T1, T2)(T1 dividend, T2 divisor)
+Signed!T1 umod(T1, T2)(T1 dividend, T2 divisor) pure
 {
 	Signed!T1 signed_modulo = dividend%divisor;
 	if (signed_modulo < 0) {
@@ -332,7 +390,7 @@ bool sigmoidChance(int x)
 // The return value approaches `scale` as `x` approaches positive infinity;
 // approaches 0 as `x` approaches negative infinity;
 // is equal to 0.5 when `x == 0`.
-T scaledSigmoid(T)(T scale, T x)
+T scaledSigmoid(T)(T scale, T x) pure
 {
 	return scale*(1+x+abs(x))/(2+2*abs(x));
 }
@@ -344,7 +402,7 @@ T scaledSigmoid(T)(T scale, T x)
 }*/
 
 // HACK!
-string arrayFormat(string fmt, string[] args)
+string arrayFormat(string fmt, string[] args) pure
 {
 	switch (args.length) {
 		case 0: return fmt;

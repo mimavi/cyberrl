@@ -175,7 +175,7 @@ class Game
 	// Note: The first character in resulting sentence
 	// is automatically capitalized.
 	// The comma at the end of sentence is automatically inserted
-	// if not present, and if the sentence does not end with '!' or '?'.
+	// if not present, and also if the sentence does not end with '!' or '?'.
 	void sendVisibleEventMsg(const Point[] ps, Color color, bool is_bright,
 		string fmt, string[] args...)
 	{
@@ -194,16 +194,22 @@ class Game
 			//msgs.insertBack(Msg(fmt, args.dup, color, is_bright));
 		}
 	}
+	void sendVisibleEventMsg(Point p, Color color, bool is_bright,
+		string fmt, string[] args...)
+	{
+		sendVisibleEventMsg([p], color, is_bright, fmt, args);
+	}
 	void sendVisibleEventMsg(int x, int y, Color color, bool is_bright,
 		string fmt, string[] args...)
 	{
-		sendVisibleEventMsg([Point(x, y)], color, is_bright, fmt, args);
+		sendVisibleEventMsg(Point(x, y), color, is_bright, fmt, args);
 	}
 
 	void centerizeCamera(int x, int y)
 	{
 		camera_x = x-viewport_width/2;
 		camera_y = y-viewport_height/2;
+		draw();
 	}
 	void centerizeCamera(Point p) { centerizeCamera(p.x, p.y); }
 

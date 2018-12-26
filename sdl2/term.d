@@ -8,6 +8,7 @@ import core.stdc.ctype;
 import derelict.sdl2.sdl;
 
 public import term_common;
+import util;
 
 private immutable uint symbol_width = 9;
 private immutable uint symbol_height = 16;
@@ -340,12 +341,26 @@ void refresh()
 	SDL_RenderPresent(renderer);
 }
 
+void waitMilliseconds(int delay)
+{
+	refresh();
+	SDL_Delay(delay);
+}
+
 void setSymbol(int x, int y, Symbol symbol)
 {
 	symbol_array[x+y*term_width] = symbol;
+}
+void setSymbol(Point p, Symbol symbol)
+{
+	setSymbol(p.x, p.y, symbol);
 }
 
 Symbol getSymbol(int x, int y)
 {
 	return symbol_array[x+y*term_width];
+}
+Symbol getSymbol(Point p)
+{
+	return getSymbol(p.x, p.y);
 }

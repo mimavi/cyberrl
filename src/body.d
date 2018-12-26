@@ -49,12 +49,12 @@ abstract class Body
 	Array!Item items;
 	private Stats _stats;
 
-	@property void stats(Stats stats)
+	@property void stats(Stats stats) pure
 	{
 		_stats = stats;
 		update();
 	}
-	@property Stats stats() const { return _stats; }
+	@property Stats stats() const pure { return _stats; }
 
 	@property Strike unarmed_hit_max_strike() const /*pure*/
 	{
@@ -72,12 +72,12 @@ abstract class Body
 	void dealStrike(int part, Strike strike) /*pure*/
 	{
 		foreach (int i, e; strike) {
-			int resistance = getResistance(cast(DamageType)i, part);
+			int resistance = getResistance(cast(DamageType) i, part);
 			dealDamage(part, e*(max_resistance-resistance)/max_resistance);
 		}
 	}
 
-	void update() /*pure*/ {};
+	void update() pure {};
 
 	protected abstract void dealDamage(int part, int damage) /*pure*/
 		out { assert(getDamage(part) <= getMaxDamage(part)); }
@@ -99,14 +99,14 @@ abstract class FleshyBody : Body
 
 	int _lost_blood;
 
-	@property int lost_blood() const /*pure*/ { return _lost_blood; }
-	@property abstract int total_bleeding() const /*pure*/;
-	@property abstract int total_pain() const /*pure*/;
+	@property int lost_blood() const pure { return _lost_blood; }
+	@property abstract int total_bleeding() const pure;
+	@property abstract int total_pain() const pure;
 
 	this() /*pure*/ { super(); }
 	this(Serializer serializer) /*pure*/ { super(serializer); }
 
-	override void update() /*pure*/
+	override void update() pure
 	{
 		_lost_blood += total_bleeding;
 	}
@@ -124,7 +124,7 @@ class HumanFleshyBody : FleshyBody
 	private int[HumanFleshyBodyPart.max+1] bleeding;
 	private int[HumanFleshyBodyPart.max+1] pain;
 
-	@property override int total_bleeding() const /*pure*/
+	@property override int total_bleeding() const pure
 	{
 		int sum;
 		foreach (e; bleeding) {
@@ -133,7 +133,7 @@ class HumanFleshyBody : FleshyBody
 		return sum;
 	}
 
-	@property override int total_pain() const /*pure*/
+	@property override int total_pain() const pure
 	{
 		// TODO: Add pain.
 		return 0;

@@ -30,7 +30,7 @@ class AiActor : Actor
 	}
 	this(Serializer serializer) { this(); }
 
-	override bool subupdate()
+	protected override bool updateRaw()
 	{
 		if (map.getTile(x, y).is_visible) {
 			group.target = map.game.player;

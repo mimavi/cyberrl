@@ -40,17 +40,19 @@ abstract class Actor
 	private int _x, _y;
 	private Gender gender = Gender.male;
 
-	@property abstract Symbol symbol() const /*pure*/;
-	@property abstract string name() const /*pure*/;
+	@property abstract Symbol symbol() const pure;
+	@property abstract string name() const pure;
 	//@property abstract Strike unarmed_max_strike();
-	abstract bool subupdate(); // Return false if `Map.update()` shall return.
 
-	@property string definite_name() const /*pure*/ { return "the "~name; }
-	@property string indefinite_name() const /*pure*/
+	// Return false if `Map.update()` shall return.
+	protected abstract bool updateRaw(); 
+
+	@property string definite_name() const pure { return "the "~name; }
+	@property string indefinite_name() const pure
 	{
 		return prependIndefiniteArticle(name);
 	}
-	@property string possesive_pronoun() const /*pure*/
+	@property string possessive_pronoun() const pure
 	{
 		final switch(gender) {
 			case Gender.male: return "his";
@@ -60,12 +62,21 @@ abstract class Actor
 	}
 
 	// XXX: Superfluous?
-	@property Stats stats() const /*pure*/ { return body_.stats; }
+	@property Stats stats() const pure { return body_.stats; }
 	@property void stats(Stats stats)
 	{
 		body_.stats = stats;
 		//body_.update();
 		//body_ = new ActorBody(stats);
+	}
+
+	@property Item weapon()
+	{
+		if (weapon_index == -1) {
+			return null;
+		}
+		return body_.items[weapon_index];
+		//return items[weapon_index];
 	}
 
 	@property int quickness() const /*pure*/ { return 0; }
@@ -95,8 +106,12 @@ abstract class Actor
 
 	@property int hit_damage_bonus() const /*pure*/
 	{
-		return stats[Stat.strength]
-			+ stats[Stat.striking];
+		return stats[Stat.strength] + stats[Stat.striking];
+	}
+
+	@property int shoot_damage_bonus() const
+	{
+		return stats[Stat.aiming];
 	}
 
 	@property int shoot_aim_bonus() const
@@ -104,12 +119,12 @@ abstract class Actor
 		return stats[Stat.dexterity] + stats[Stat.aiming];
 	}
 
-	@property int x() const /*pure*/ { return _x; }
-	@property int y() const /*pure*/ { return _y; }
+	@property int x() const pure { return _x; }
+	@property int y() const pure { return _y; }
 	@property Point pos() const { return Point(_x, _y); }
 
 	// XXX: Superfluous?
-	@property ref Array!Item items() { return body_.items; }
+	@property Array!Item items() { return body_.items; }
 
 	this(Stats stats = Stats())
 	{
@@ -131,7 +146,7 @@ abstract class Actor
 		body_.update();
 		if (ap >= ap_action_threshold) {
 			ap -= ap_action_threshold;
-			return subupdate();
+			return updateRaw();
 		}
 		return true;
 	}
@@ -141,16 +156,17 @@ abstract class Actor
 		term.setSymbol(x, y, symbol);
 	}
 
+	// TODO: Make it `protected`.
 	void initPos(int x, int y) /*pure*/
-		in(map !is null)
+	in (map !is null)
 	{
 		map.getTile(x, y).actor = this;
 		_x = x;
 		_y = y;
 	}
 
-	void setPos(int x, int y)
-		in(map !is null)
+	protected void setPos(int x, int y)
+	in (map !is null)
 	{
 		map.getTile(_x, _y).actor = null;
 		initPos(x, y);
@@ -160,14 +176,44 @@ abstract class Actor
 	// It should be the responsibility of the action's implementation
 	// to modify that.
 
+	void insertItem(Item item)
+	in (item !is null)
+	{
+		foreach (ref e; body_.items) {
+			if(e.is_stackable
+			&& e.type == item.type
+			&& e.stack_size+item.stack_size <= e.max_stack_size) {
+				e.insertToStacked(item);
+				return;
+			}
+		}
+		body_.items.insertBack(item);
+	}
+
+	/*void removeItem(int index, int num)
+	in (num >= 0 && num <= body_.items[index].stacked_num)
+	{
+		if (num == body_.items[index].stack_size) {
+			removeItemAtIndex(index);
+		} else {
+			body_.items[index].stacked_num -= num;
+		}
+	}*/
+	void removeItem(int index)
+	in (index >= 0 && index < body_.items.length)
+	{
+		auto range = body_.items[index..index+1];
+		body_.items.linearRemove(range);
+	}
+
 	bool actWait()
-		in(map !is null)
+	in (map !is null)
 	{
 		return true;
 	}
 
 	bool actMoveTo(int x, int y)
-		in(map !is null)
+	in (map !is null)
 	{
 		// Must be adjacent.
 		if (abs(x-_x) > 1 || abs(y-_y) > 1) {
@@ -186,11 +232,11 @@ abstract class Actor
 		return true;
 	}
 	bool actMoveTo(Point p)
-		in(map !is null)
+	in (map !is null)
 		{ return actMoveTo(p.x, p.y); }
 
 	bool actOpen(int x, int y)
-		in(map !is null)
+	in (map !is null)
 	{
 		// Must be adjacent.
 		if (abs(x-_x) > 1 || abs(y-_y) > 1) {
@@ -204,11 +250,11 @@ abstract class Actor
 		return true;
 	}
 	bool actOpen(Point p)
-		in(map !is null)
+	in (map !is null)
 		{ return actOpen(p.x, p.y); }
 
 	bool actPickUp(int index)
-		in(map !is null)
+	in (map !is null)
 	{
 		if (index < 0 || index >= map.getTile(x, y).items.length) {
 			return false;
@@ -216,21 +262,23 @@ abstract class Actor
 		auto item = map.getTile(x, y).items[index];
 		auto range = map.getTile(x, y).items[index..index+1];
 		map.getTile(x, y).items.linearRemove(range);
-		items.insertBack(item);
+		insertItem(item);
+		//items.insertBack(item);
 		
 		ap -= base_ap_cost - dexterity_ap_weight*stats[Stat.dexterity];
 		return true;
 	}
 
 	bool actDrop(int index)
-		in(map !is null)
+	in (map !is null)
 	{
 		if (index < 0 || index >= items.length) {
 			return false;
 		}
 		auto item = items[index];
 		auto range = items[index..index+1];
-		items.linearRemove(range);
+		//body_.items.linearRemove(range);
+		removeItem(index);
 		map.getTile(x, y).items.insertBack(item);
 
 		ap -= base_ap_cost - dexterity_ap_weight*stats[Stat.dexterity];
@@ -238,9 +286,9 @@ abstract class Actor
 	}
 
 	bool actWield(int index)
-		in(map !is null)
+	in (map !is null)
 	{
-		if (index < 0 || index >= items.length) {
+		if (index < 0 || index >= body_.items.length) {
 			return false;
 		}
 		weapon_index = index;
@@ -251,12 +299,12 @@ abstract class Actor
 	private string act_hit_prev_damage_str;
 
 	bool actHit(int x, int y)
-		in(map !is null)
+	in (map !is null)
 	{
 		auto hittee = map.getTile(x, y).actor;
 
-		if (weapon_index != -1) {
-			if (items[weapon_index].tryHit(this, x, y)) {
+		if (weapon !is null) {
+			if (weapon.tryHit(this, x, y)) {
 				ap -= base_ap_cost - dexterity_ap_weight*stats[Stat.dexterity];
 				return true;
 			}
@@ -273,7 +321,7 @@ abstract class Actor
 					HumanFleshyBodyPart.right_leg,
 					HumanFleshyBodyPart.head,
 					HumanFleshyBodyPart.torso,
-					HumanFleshyBodyPart.torso
+					HumanFleshyBodyPart.torso,
 				].choice(rng);
 
 				onUnarmedHitJustBefore(x, y, part);
@@ -294,6 +342,39 @@ abstract class Actor
 	}
 	bool actHit(Point p) { return actHit(p.x, p.y); }
 
+	bool actShoot(int x, int y)
+	in (map !is null)
+	{
+		if (weapon !is null && weapon.tryShoot(this, x, y)) {
+			ap -= base_ap_cost - dexterity_ap_weight*stats[Stat.dexterity];
+			return true;
+		}
+		return false;
+	}
+	bool actShoot(Point p) { return actShoot(p.x, p.y); }
+
+	bool actLoadAmmo(int index, int num)
+	{
+		if (index < 0 || index >= body_.items.length) {
+			return false;
+		}
+		if (weapon is null) {
+			return false;
+		}
+		return weapon.tryLoadAmmo(this, index, num);
+		//return weapon.tryLoadAmmo(this, body_.items[index], num);
+	}
+	bool actLoadAmmo(int index)
+	{
+		if (weapon is null) {
+			return false;
+		}
+		/*if (weapon.is_ammo_container) {
+			return actLoadAmmo(index, items[index].loaded_ammo.length);
+		}*/
+		return actLoadAmmo(index, 1);
+	}
+
 	void onTryHitWeaponCantHit(int x, int y) {}
 
 	void onTryHitNothing(int x, int y) {}
@@ -305,7 +386,7 @@ abstract class Actor
 	}
 
 	void onHitImpact(int x, int y, int part)
-		in(map.getTile(x, y).actor !is null)
+	in (map.getTile(x, y).actor !is null)
 	{
 		auto hittee = map.getTile(x, y).actor;
 		string damage_str = hittee.body_.getDamageStr(part);
@@ -314,20 +395,20 @@ abstract class Actor
 				"%1(1)|2$s hits %3(2)|4$s in %5$s %6$s"
 				~" with %7$s %8$s!",
 				definite_name, "somebody", hittee.definite_name, "somebody",
-				hittee.possesive_pronoun, body_.getPartName(part),
-				possesive_pronoun, items[weapon_index].name);
+				hittee.possessive_pronoun, body_.getPartName(part),
+				possessive_pronoun, weapon.name);
 		} else {
 			map.game.sendVisibleEventMsg([pos, hittee.pos], Color.red, true,
 				"%2(1)|1$s hits %3(2)|1$s in %4$s %5$s"
 				~" with %6$s %7$s and the part becomes %8$s!",
 				"somebody", definite_name, hittee.definite_name,
-				hittee.possesive_pronoun, body_.getPartName(part),
-				possesive_pronoun, items[weapon_index].name, damage_str);
+				hittee.possessive_pronoun, body_.getPartName(part),
+				possessive_pronoun, weapon.name, damage_str);
 		}
 	}
 
 	void onHitMiss(int x, int y)
-		in(map.getTile(x, y).actor !is null)
+	in (map.getTile(x, y).actor !is null)
 	{
 		auto hittee = map.getTile(x, y).actor;
 		map.game.sendVisibleEventMsg(hittee.x, hittee.y, Color.red, false,
@@ -341,7 +422,7 @@ abstract class Actor
 	}
 
 	void onUnarmedHitImpact(int x, int y, int part)
-		in(map.getTile(x, y).actor !is null)
+	in (map.getTile(x, y).actor !is null)
 	{
 		auto hittee = map.getTile(x, y).actor;
 		string damage_str = hittee.body_.getDamageStr(part);
@@ -349,27 +430,17 @@ abstract class Actor
 			map.game.sendVisibleEventMsg([pos, hittee.pos], Color.red, true,
 				"%2(1)|1$s hits %3(2)|1$s in %4$s %5$s!",
 				"somebody", definite_name, hittee.definite_name,
-				hittee.possesive_pronoun, body_.getPartName(part));
+				hittee.possessive_pronoun, body_.getPartName(part));
 		} else {
 			map.game.sendVisibleEventMsg([pos, hittee.pos], Color.red, true,
 				"%2(1)|1$s hits %3(2)|1$s in %4$s %5$s"
 				~" and the part becomes %6$s",
 				"somebody", definite_name, hittee.definite_name,
-				hittee.possesive_pronoun, body_.getPartName(part), damage_str);
+				hittee.possessive_pronoun, body_.getPartName(part), damage_str);
 		}
 	}
 
 	void onUnarmedHitMiss(int x, int y) { onHitMiss(x, y); }
-
-	bool actShoot(int x, int y)
-		in(map !is null)
-	{
-		if (weapon_index != -1) {
-			return items[weapon_index].tryShoot(this, x, y);
-		}
-		return false;
-	}
-	bool actShoot(Point p) { return actShoot(p.x, p.y); }
 
 	void onTryShootWeaponCantShoot(int x, int y)
 	{
@@ -379,8 +450,26 @@ abstract class Actor
 	{
 	}
 
+	void onShootImpactOnActorJustBefore(int x, int y, Item projectile,
+		int part)
+	in (projectile !is null && map.getTile(x, y).actor !is null)
+	{
+	}
+
+	void onShootImpactOnActor(int x, int y, Item projectile, int part)
+	in (projectile !is null && map.getTile(x, y).actor !is null)
+	{
+	}
+
+	void onTryLoadAmmoNotCompatible(Item ammo)
+	{
+		map.game.sendMsg(Color.cyan, true,
+			weapon.definite_name~" can't be loaded with "
+			~ammo.indefinite_plural_name);
+	}
+
 	bool rollWhetherUnarmedHitImpacts(Actor hittee)
-		in(hittee !is null)
+	in (hittee !is null)
 	{
 		return
 			sigmoidChance(hit_chance_bonus-hittee.evasion_chance_bonus);
@@ -388,7 +477,7 @@ abstract class Actor
 
 	Strike rollUnarmedHitStrike()
 	{
-		// TODO: Take account for unarmed fighting skills.
+		// TODO: Take acstacked_num for unarmed fighting skills.
 		Strike strike;
 		foreach (int i, ref e; strike) {
 			e = uniform!"[]"(0, scaledSigmoid(body_.unarmed_hit_max_strike[i],
@@ -397,10 +486,10 @@ abstract class Actor
 		return strike;
 	}
 
-	float getDistance(int x, int y) const /*pure*/
+	double getDistance(int x, int y) const pure
 		{ return sqrt(cast(float)((x-this.x)^^2+(y-this.y)^^2)); }
-	float getDistance(Point p) const /*pure*/
+	double getDistance(Point p) const pure
 		{ return getDistance(p.x, p.y); }
-	float getDistance(const Actor target) const /*pure*/
+	double getDistance(const Actor target) const pure
 		{ return getDistance(target.x, target.y); }
 }

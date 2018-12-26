@@ -6,6 +6,7 @@ import ser;
 import term;
 //import game;
 import tile;
+import item;
 import actor;
 import body;
 
@@ -28,11 +29,11 @@ class PlayerActor : Actor
 	@property override string name() const /*pure*/ { return "you"; }
 	@property override string definite_name() const /*pure*/ { return name; }
 	@property override string indefinite_name() const /*pure*/ { return name; }
-	@property override string possesive_pronoun() const /*pure*/
+	@property override string possessive_pronoun() const /*pure*/
 		{ return "your"; }
 	@property string player_name() const /*pure*/ { return _player_name; }
 	@property void player_name(string name) /*pure*/ { _player_name = name; }
-	@property private string[int] item_appends() const /*pure*/
+	@property private string[int] item_appendices() const /*pure*/
 	{
 		return [
 			weapon_index: " (currently wielded)",
@@ -46,13 +47,13 @@ class PlayerActor : Actor
 	}
 	this(Serializer serializer) { this(); }
 
-	override void initPos(int x, int y) /*pure*/
+	protected override void initPos(int x, int y) /*pure*/
 	{
 		super.initPos(x, y);
 		map.game.centerizeCamera(x, y);
 	}
 
-	override bool subupdate()
+	protected override bool updateRaw()
 	{
 		void fovCallback(int tile_x, int tile_y, Tile tile)
 		{
@@ -87,6 +88,12 @@ class PlayerActor : Actor
 				if (!has_acted) {
 					has_acted = actOpen(x+key_to_point[key].x, y+key_to_point[key].y);
 				}
+			} else if (key == Key.r) {
+				int index;
+				if (menu.selectItem(items, item_appendices, "Select item to load:",
+				index)) {
+					has_acted = actLoadAmmo(index);
+				}
 			} else if (key == Key.g) {
 				int index;
 				if (menu.selectItem(map.getTile(x, y).items, (string[int]).init,
@@ -95,13 +102,13 @@ class PlayerActor : Actor
 				}
 			} else if (key == Key.d) {
 				int index;
-				if (menu.selectItem(items, item_appends, "Select item to drop:",
+				if (menu.selectItem(items, item_appendices, "Select item to drop:",
 				index)) {
 					has_acted = actDrop(index);
 				}
 			} else if (key == Key.w) {
 				int index;
-				if (menu.selectItem(items, item_appends, "Select item to wield:",
+				if (menu.selectItem(items, item_appendices, "Select item to wield:",
 				index)) {
 					has_acted = actWield(index);
 				}
@@ -119,6 +126,7 @@ class PlayerActor : Actor
 						"you cannot shoot with this weapon");
 				} else {
 					Point[] ray;
+					bool was_terminated = false;
 					bool getIsBlocking(int x, int y)
 					{
 						auto tile = map.getTile(x, y);
@@ -154,12 +162,22 @@ class PlayerActor : Actor
 					}
 					bool getIsShootLookTerminated(int x, int y, Key key)
 					{
+						was_terminated = true;
 						return key == Key.escape || key == Key.enter || key == Key.f;
 					}
 
-					auto target = menu.selectTile(
+					Point target = menu.selectTile(
 						map.game, &drawShootLook, &getIsShootLookTerminated);
-					actShoot(target);
+
+					if (!was_terminated && target.x == x && target.y == y) {
+						map.game.sendMsg(Color.cyan, false,
+							"you cannot shoot at yourself with this command");
+						continue;
+					}
+
+					map.game.centerizeCamera(target);
+					has_acted = actShoot(target);
+					map.game.centerizeCamera(this.pos);
 				}
 			} else if (key == Key.l) {
 				void drawLook(int x, int y)
@@ -238,7 +256,7 @@ class PlayerActor : Actor
 
 	override void onHitJustBefore(int x, int y, int part)
 	{
-		auto hittee = map.getTile(x, y).actor;
+		Actor hittee = map.getTile(x, y).actor;
 		act_hit_prev_damage_str = hittee.body_.getDamageStr(part);
 	}
 
@@ -251,21 +269,21 @@ class PlayerActor : Actor
 				Color.white, true, "%1(1)|2$s hit %3(2)|4$s in %5$s %6$s"
 				~" with %7$s %8$s!",
 				definite_name, "somebody", hittee.definite_name, "somebody",
-				hittee.possesive_pronoun, body_.getPartName(part),
-				possesive_pronoun, items[weapon_index].name);
+				hittee.possessive_pronoun, body_.getPartName(part),
+				possessive_pronoun, items[weapon_index].name);
 		} else {
 			map.game.sendVisibleEventMsg([pos, hittee.pos],
 				Color.white, true, "%2(1)|1$s hit %3(2)|1$s in %4$s %5$s"
 				~" with %6$s %7$s and the part becomes %8$s!",
 				"somebody", definite_name, hittee.definite_name,
-				hittee.possesive_pronoun, body_.getPartName(part),
-				possesive_pronoun, items[weapon_index].name, damage_str);
+				hittee.possessive_pronoun, body_.getPartName(part),
+				possessive_pronoun, items[weapon_index].name, damage_str);
 		}
 	}
 
 	override void onHitMiss(int x, int y)
 	{
-		auto hittee = map.getTile(x, y).actor;
+		Actor hittee = map.getTile(x, y).actor;
 		map.game.sendVisibleEventMsg([pos, hittee.pos],
 			Color.white, false, "%2(1)|1$s miss %3(2)|1$s",
 			"somebody", definite_name, hittee.definite_name);
@@ -273,19 +291,49 @@ class PlayerActor : Actor
 
 	override void onUnarmedHitImpact(int x, int y, int part)
 	{
-		auto hittee = map.getTile(x, y).actor;
+		Actor hittee = map.getTile(x, y).actor;
 		string damage_str = hittee.body_.getDamageStr(part);
+
 		if (damage_str == act_hit_prev_damage_str) {
 			map.game.sendVisibleEventMsg([pos, hittee.pos],
 				Color.white, true, "%2(1)|1$s hit %3(2)|1$s in %4$s %5$s!",
 				"somebody", definite_name, hittee.definite_name,
-				hittee.possesive_pronoun, body_.getPartName(part));
+				hittee.possessive_pronoun, hittee.body_.getPartName(part));
 		} else {
 			map.game.sendVisibleEventMsg([pos, hittee.pos],
 				Color.white, true, "%2(1)|1$s hit %3(2)|1$s in %4$s %5$s"
 				~" and the part becomes %6$s!",
 				"somebody", definite_name, hittee.definite_name,
-				hittee.possesive_pronoun, body_.getPartName(part), damage_str);
+				hittee.possessive_pronoun, hittee.body_.getPartName(part),
+				damage_str);
+		}
+	}
+
+	private string act_shoot_prev_damage_str;
+
+	override void onShootImpactOnActorJustBefore(int x, int y, Item projectile,
+		int part)
+	{
+		Actor target = map.getTile(x, y).actor;
+		act_hit_prev_damage_str = target.body_.getDamageStr(part);
+	}
+
+	override void onShootImpactOnActor(int x, int y, Item projectile, int part)
+	{
+		Actor target = map.getTile(x, y).actor;
+		string damage_str = target.body_.getDamageStr(part);
+
+		if (damage_str == act_shoot_prev_damage_str) {
+			map.game.sendVisibleEventMsg(target.pos,
+				Color.white, true, "the %1$s hits %2$s in %3$s %4$s!",
+				projectile.name, target.definite_name,
+				target.possessive_pronoun, target.body_.getPartName(part));
+		} else {
+			map.game.sendVisibleEventMsg(target.pos,
+				Color.white, true, "the %1$s hits %2$s in %3$s %4$s"
+				~" and the part becomes %5$s!",
+				projectile.name, target.definite_name, target.possessive_pronoun,
+				target.body_.getPartName(part), damage_str);
 		}
 	}
 }

@@ -1,8 +1,3 @@
-// Prevent aborting the executable if a cycle is detected.
-// Cycles are not harmful in our case,
-// since static constructors don't interact with each other.
-extern(C) __gshared string[] rt_options = ["oncycle=ignore"];
-
 //import std.range.primitives;
 import std.container;
 import std.array;
@@ -11,6 +6,7 @@ import std.meta;
 import std.traits;
 import std.stdio;
 import term;
+
 enum noser;
 
 mixin template Serializable()
@@ -67,6 +63,25 @@ mixin template Serializable()
 		}
 		return submakes[type](serializer);
 	}
+
+	/*static typeof(this) dup()
+	{
+		
+
+		// TODO: Simplify this `foreach` and put it into some routine.
+		foreach (e; __traits(allMembers, typeof(this))) {
+			static if (e != "Monitor"
+			&& e != "opUnary"
+			&& e != "opBinary"
+			&& !hasUDA!(__traits(getMember, typeof(this), e), noser)
+			&& isMutable!(typeof(__traits(getMember, this, e)))
+			&& !isSomeFunction!(__traits(getMember, typeof(this), e))
+			&& hasAddress!(__traits(getMember, this, e))) {
+				__traits(getMember, this, e)
+				//serializer.save(__traits(getMember, this, e), e);
+			}
+		}
+	}*/
 
 	void save(Serializer serializer)
 	{

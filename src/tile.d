@@ -24,14 +24,14 @@ class Tile
 	{
 		return prependIndefiniteArticle(name);
 	}
-	@property abstract Symbol symbol() /*pure*/ const;
+	@property abstract Symbol symbol() pure const;
 
-	@property abstract bool is_walkable() /*pure*/ const;
-	@property abstract bool is_transparent() /*pure*/ const;
-	@property bool is_default() /*pure*/ const { return false; }
-	@property bool is_static() /*pure*/ const { return true; }
+	@property abstract bool is_walkable() pure const;
+	@property abstract bool is_transparent() pure const;
+	@property bool is_default() pure const { return false; }
+	@property bool is_static() pure const { return true; }
 
-	@property void is_visible(bool val) /*pure*/
+	@property void is_visible(bool val) pure
 	{
 		_is_visible = val;
 		if (val) {
@@ -39,7 +39,7 @@ class Tile
 		}
 	}
 
-	@property bool is_visible() /*pure*/ const
+	@property bool is_visible() pure const
 	{
 		if (debug_is_all_visible) {
 			return true;
@@ -47,7 +47,7 @@ class Tile
 		return _is_visible;
 	}
 
-	@property Symbol visible_symbol() /*pure*/ const
+	@property Symbol visible_symbol() pure const
 	{
 		if (!is_visible) {
 			Symbol result = last_visible_symbol;
@@ -66,11 +66,11 @@ class Tile
 		}
 	}
 
-	this() /*pure*/
+	this() pure
 	{
 		items = Array!Item();
 	}
-	this(Serializer) /*pure*/ { this(); }
+	this(Serializer) pure { this(); }
 	void beforesave(Serializer serializer) {}
 	void beforeload(Serializer serializer) {}
 	void aftersave(Serializer serializer) {}
@@ -83,6 +83,6 @@ class Tile
 	// TODO: Rename to `tryOpen` and `tryClose` respectively.
 	// Return false if cannot be opened/closed for some reason
 	// i.e. not a door or is jammed.
-	bool open() /*pure*/ { return false; }
-	bool close() /*pure*/ { return false; }
+	bool open() pure { return false; }
+	bool close() pure { return false; }
 }

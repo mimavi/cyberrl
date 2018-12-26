@@ -104,8 +104,13 @@ bool newGameMenu()
 	//main_game.player = new PlayerActor;
 	//main_game.player.items.insertBack(new LightkatanaItem);
 	PlayerActor player = new PlayerActor;
-	player.items.insertBack(new PistolItem);
-	player.items.insertBack(new LightkatanaItem);
+	player.insertItem(new PistolItem);
+	player.insertItem(new LightkatanaItem);
+	player.insertItem(new PistolBulletItem);
+	player.insertItem(new PistolBulletItem);
+	//player.items.insertBack(new PistolItem);
+	//player.items.insertBack(new LightkatanaItem);
+	//player.items.insertBack(new PistolClipItem);
 
 	do {
 		if (key == Key.digit_4) {
@@ -378,13 +383,13 @@ void drawDualList(string[term_height] left_strs,
 	}
 }
 
-bool selectItem(Array!Item items, string[int] appends, string header, 
+bool selectItem(Array!Item items, string[int] appendices, string header, 
 	ref int index)
 {
 	int pos = 0;
 	Key key;
 
-	drawSelectItem(items, appends, header, pos);
+	drawSelectItem(items, appendices, header, pos);
 	do {
 		key = term.readKey();
 		if (key == Key.escape) {
@@ -397,17 +402,19 @@ bool selectItem(Array!Item items, string[int] appends, string header,
 	return true;
 }
 
-void drawSelectItem(Array!Item items, string[int] appends, string header,
+void drawSelectItem(Array!Item items, string[int] appendices, string header,
 	int pos)
 {
-	term.clear(); // TODO: Optimize. Can be done without clearing.
+	term.clear();
 	term.write(0, 0, header);
 
 	foreach (i; pos..(pos+min(items.length, term_height-2))) {
-		if ((i in appends) !is null) {
-			term.write(1, i+1, index_to_chr[i]~" - "~items[i].name~appends[i]);
+		if ((i in appendices) !is null) {
+			term.write(1, i+1,
+				index_to_chr[i]~" - "~items[i].full_indefinite_name~appendices[i]);
 		} else {
-			term.write(1, i+1, index_to_chr[i]~" - "~items[i].name);
+			term.write(1, i+1, index_to_chr[i]~" - "
+				~items[i].full_indefinite_name);
 		}
 	}
 }
