@@ -22,7 +22,7 @@ struct Msg
 	Color color;
 	bool is_bright;
 
-	this(Serializer serializer) /*pure*/ {}
+	this(Serializer serializer) pure {}
 	this(string fmt, string[] args, Color color, bool is_bright) /*pure*/
 	{
 		this.fmt = fmt;

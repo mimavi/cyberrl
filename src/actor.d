@@ -180,7 +180,7 @@ abstract class Actor
 	in (item !is null)
 	{
 		foreach (ref e; body_.items) {
-			if(e.is_stackable
+			if (e.is_stackable
 			&& e.type == item.type
 			&& e.stack_size+item.stack_size <= e.max_stack_size) {
 				e.insertToStacked(item);
@@ -199,11 +199,14 @@ abstract class Actor
 			body_.items[index].stacked_num -= num;
 		}
 	}*/
-	void removeItem(int index)
-	in (index >= 0 && index < body_.items.length)
+	Item removeItem(int index)
+	in (index >= 0
+	&& index < body_.items.length)
 	{
+		Item item = body_.items[index];
 		auto range = body_.items[index..index+1];
 		body_.items.linearRemove(range);
+		return item;
 	}
 
 	bool actWait()
@@ -366,13 +369,13 @@ abstract class Actor
 	}
 	bool actLoadAmmo(int index)
 	{
+		if (index < 0 || index >= body_.items.length) {
+			return false;
+		}
 		if (weapon is null) {
 			return false;
 		}
-		/*if (weapon.is_ammo_container) {
-			return actLoadAmmo(index, items[index].loaded_ammo.length);
-		}*/
-		return actLoadAmmo(index, 1);
+		return weapon.tryLoadAmmo(this, index);
 	}
 
 	void onTryHitWeaponCantHit(int x, int y) {}

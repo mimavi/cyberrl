@@ -1,3 +1,4 @@
+import std.algorithm.comparison;
 import std.conv;
 import std.container;
 import std.random;
@@ -102,7 +103,7 @@ abstract class Item
 	@property bool is_throwable() const pure { return false; }
 
 	this() pure {}
-	this(Serializer serializer) pure { this(); }
+	this(Serializer serializer) { this(); }
 	//void beforesave(Serializer serializer) /*pure*/ {}
 	//void beforeload(Serializer serializer) /*pure*/ {}
 	//void aftersave(Serializer serializer) /*pure*/ {}
@@ -127,15 +128,37 @@ abstract class Item
 		}
 	}
 
-	void removeFromStacked(int index)
+	void removeNFromStacked(int index, int num)
+	in (is_stackable
+	&& index >= 0
+	&& index+num <= stacked.length)
+	{
+		stacked.linearRemove(stacked[index..index+num]);
+	}
+	void removeNFromStacked(int num)
+	in (is_stackable
+	&& num <= stacked.length)
+	{
+		removeNFromStacked(stacked.length-num, num);
+	}
+
+	Item removeFromStacked(int index)
 	in (is_stackable
 	&& index >= 0
 	&& index < stacked.length)
 	{
+		Item item = stacked[index];
 		stacked.linearRemove(stacked[index..index+1]);
+		return item;
+	}
+	Item removeFromStacked()
+	in (is_stackable)
+	{
+		return removeFromStacked(stacked.length-1);
 	}
 
 	void removeStacked()
+	in (is_stackable)
 	{
 		stacked.clear();
 	}
@@ -302,53 +325,50 @@ abstract class Item
 		if (actor is null) {
 			return false;
 		}
-		Item ammo = actor.body_.items[index];
-
-		if (!getIsAmmoCompatible(ammo)) {
-			actor.onTryLoadAmmoNotCompatible(ammo);
+		if (index < 0 || index >= actor.body_.items.length) {
 			return false;
 		}
-		if (num < 0) {
-			num = 0;
-		} else if (loaded_ammo.length+num > max_loaded_ammo) {
-			num = max_loaded_ammo-loaded_ammo.length;
-		}
-		/*if (num > loaded_ammo.back.stack_size) {
+		if (!getIsAmmoCompatible(actor.body_.items[index])) {
 			return false;
-		}*/
-		//loadAmmo(actor, ammo, num);
+		}
+		if (num < 1) {
+			num = 1;
+		} else if (num > actor.body_.items[index].stack_size) {
+			num = actor.body_.items[index].stack_size;
+		}
+		if (num > max_loaded_ammo-loaded_ammo.length) {
+			return false;
+		}
+		loadAmmo(actor, index, num);
 		return true;
 	}
 	bool tryLoadAmmo(Actor actor, int index)
 	{
-		if (actor is null) {
-			return false;
-		}
-		/*if (ammo.is_ammo_container) {
-			return tryLoadAmmo(actor, ammo, max_loaded_ammo-loaded_ammo.length);
-		}*/
-		return tryLoadAmmo(actor, index, 1);
+		Item ammo = actor.body_.items[index];
+		int num = min(ammo.stack_size, max_loaded_ammo-loaded_ammo.length);
+		return tryLoadAmmo(actor, index, num);
 	}
 
-	/*protected void loadAmmo(Actor actor, Item ammo, int num)
-	in (ammo !is null)
-	in (num >= 0)
-	in (num <= loaded_ammo.back.stack_size)
-	{*/
-		/*if (num == 0) {
-			return false;
-		} else if (num == loaded_ammo.back.stack_size) {
-			
-		}*/
-		/*loaded_ammo.insertBack(ammo.dup);
-		loaded_ammo.back.stack_size = num;
-		ammo.stack_size -= num;*/
-	//}
-	/*protected void loadAmmo(Actor actor, Item ammo)
+	protected void loadAmmo(Actor actor, int index, int num)
+	in (actor !is null
+	&& index >= 0 && index < actor.body_.items.length
+	&& getIsAmmoCompatible(actor.body_.items[index])
+	&& num >= 1 && num <= actor.body_.items[index].stack_size
+	&& num <= max_loaded_ammo-loaded_ammo.length)
 	{
-		//loaded_ammo += ammo.num;
-		//loaded_ammo.insertBack(ammo);
-	}*/
+		Item ammo = actor.body_.items[index];
+
+		if (num == ammo.stack_size) {
+			loaded_ammo.insertBack(ammo.stacked[]);
+			ammo.removeStacked();
+			loaded_ammo.insertBack(ammo);
+			actor.removeItem(index);
+		} else {
+			loaded_ammo.insertBack(
+				ammo.stacked[$-num..$]);
+			ammo.removeNFromStacked(num);
+		}
+	}
 
 	protected bool rollWhetherHitImpacts(Actor hitter, Actor hittee)
 	in ((hitter !is null) && (hittee !is null))
