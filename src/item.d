@@ -283,7 +283,9 @@ abstract class Item
 			//map.getTile(ray[$-1]).actor.body_.dealStrike(
 		//}
 		//impactShot(shooter, x, y);
-		shootImpact(shooter, null, ray[$-1]);
+		Item projectile = loaded_ammo[0];
+		loaded_ammo.linearRemove(loaded_ammo[0..1]);
+		shootImpact(shooter, projectile, ray[$-1]);
 
 		if (shooter.map.getTile(ray[$-1]).is_visible) {
 				shooter.map.game.setSymbolOnViewport(ray[$-1],
@@ -294,7 +296,8 @@ abstract class Item
 	}
 
 	protected void shootImpact(Actor shooter, Item projectile, int x, int y)
-	in ((shooter !is null) && (projectile !is null))
+	in ((shooter !is null)
+	&& (projectile !is null))
 	{
 		Actor target = shooter.map.getTile(x, y).actor;
 		if ((target !is null) && rollWhetherShootImpacts(shooter, target)) {
@@ -358,6 +361,7 @@ abstract class Item
 	{
 		Item ammo = actor.body_.items[index];
 
+		// XXX: Probably doesn't belong here.
 		if (num == ammo.stack_size) {
 			loaded_ammo.insertBack(ammo.stacked[]);
 			ammo.removeStacked();
@@ -371,7 +375,8 @@ abstract class Item
 	}
 
 	protected bool rollWhetherHitImpacts(Actor hitter, Actor hittee)
-	in ((hitter !is null) && (hittee !is null))
+	in ((hitter !is null)
+	&& (hittee !is null))
 	{
 		// TODO: Take account for weapon skills.
 		return
