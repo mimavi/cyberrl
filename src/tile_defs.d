@@ -5,7 +5,7 @@ import tile;
 
 class FloorTile : Tile
 {
-	mixin InheritedSerializable;
+	mixin (inherited_serializable);
 	@property override string name() const pure { return "floor"; }
 	@property override string displayed_name() const pure 
 		{ return "the "~name; }
@@ -19,7 +19,7 @@ class FloorTile : Tile
 
 class WallTile : Tile
 {
-	mixin InheritedSerializable;
+	mixin (inherited_serializable);
 	@property override string name() const pure { return "wall"; }
 	@property override Symbol symbol() const pure
 		{ return Symbol('#', Color.white); }
@@ -31,7 +31,7 @@ class WallTile : Tile
 
 class DefaultWallTile : WallTile
 {
-	mixin InheritedSerializable;
+	mixin (inherited_serializable);
 	@property override bool is_default() const pure { return true; }
 	this() pure { super(); }
 	this(Serializer serializer) pure { super(serializer); }
@@ -39,7 +39,7 @@ class DefaultWallTile : WallTile
 
 class MarkerFloorTile : FloorTile
 {
-	mixin InheritedSerializable;
+	mixin (inherited_serializable);
 	Symbol _symbol;
 	@property override Symbol symbol() const pure { return _symbol; }
 	this(Color color) pure { super(); _symbol = Symbol('.', color, true); }
@@ -48,6 +48,7 @@ class MarkerFloorTile : FloorTile
 
 class DoorTile : Tile
 {
+	mixin (inherited_serializable);
 	protected bool is_open = false;
 	@property override string name() const { return "door"; }
 	@property override bool is_static() const { return false; }
@@ -76,7 +77,7 @@ class DoorTile : Tile
 
 class HDoorTile : DoorTile
 {
-	mixin InheritedSerializable;
+	mixin (inherited_serializable);
 	@property override Symbol symbol() const pure
 	{
 		if (is_open) {
@@ -92,7 +93,7 @@ class HDoorTile : DoorTile
 
 class VDoorTile : DoorTile
 {
-	mixin InheritedSerializable;
+	mixin (inherited_serializable);
 	@property override Symbol symbol() const pure
 	{
 		if (is_open) {

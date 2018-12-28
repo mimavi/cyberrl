@@ -5,12 +5,9 @@ import actor;
 import item;
 import std.container;
 
-// XXX: Perhaps place it in `map.d`?
-immutable bool debug_is_all_visible = false;
-
 class Tile
 {
-	mixin Serializable;
+	mixin (serializable);
 	@noser Actor actor;
 	Array!Item items;
 
@@ -41,9 +38,6 @@ class Tile
 
 	@property bool is_visible() pure const
 	{
-		if (debug_is_all_visible) {
-			return true;
-		}
 		return _is_visible;
 	}
 

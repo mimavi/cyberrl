@@ -47,7 +47,7 @@ enum Stat
 
 struct Stats
 {
-	mixin Serializable;
+	mixin (serializable);
 	mixin SimplySerialized;
 	enum attribute_min = -5;
 	enum attribute_max = 5;

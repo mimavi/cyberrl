@@ -21,7 +21,7 @@ abstract class Actor
 {
 	invariant(body_ !is null);
 
-	mixin Serializable;
+	mixin (serializable);
 
 	enum base_ap_per_turn = 10;
 	enum base_ap_cost = 100;
@@ -121,7 +121,7 @@ abstract class Actor
 
 	@property int x() const pure { return _x; }
 	@property int y() const pure { return _y; }
-	@property Point pos() const { return Point(_x, _y); }
+	@property Point pos() const pure { return Point(_x, _y); }
 
 	// XXX: Superfluous?
 	@property Array!Item items() { return body_.items; }
@@ -156,9 +156,23 @@ abstract class Actor
 		term.setSymbol(x, y, symbol);
 	}
 
-	// TODO: Make it `protected`.
-	void initPos(int x, int y) /*pure*/
+	void init_(Map map, int x, int y)
+	{
+		this.map = map;
+		initPos(x, y);
+	}
+	void init_(int x, int y)
+	{
+		init_(map, x, y);
+	}
+	void init_(Map map)
+	{
+		init_(map, x, y);
+	}
+
+	protected void initPos(int x, int y)
 	in (map !is null)
+	// XXX: Enforce `x` and `y` within map range with contract?
 	{
 		map.getTile(x, y).actor = this;
 		_x = x;

@@ -6,7 +6,7 @@ import body;
 
 class LightkatanaItem : Item
 {
-	mixin InheritedSerializable;
+	mixin (inherited_serializable);
 
 	@property override Symbol symbol() const pure
 		{ return Symbol('/', Color.magenta, true); }
@@ -33,7 +33,7 @@ class LightkatanaItem : Item
 
 class KnifeItem : Item
 {
-	mixin InheritedSerializable;
+	mixin (inherited_serializable);
 
 	@property override Symbol symbol() const pure
 		{ return Symbol('/', Color.cyan, true); }
@@ -55,7 +55,7 @@ class KnifeItem : Item
 
 class PistolItem : Item
 {
-	mixin InheritedSerializable;
+	mixin (inherited_serializable);
 
 	@property override Symbol symbol() const pure
 		{ return Symbol('[', Color.cyan, true); }
@@ -91,7 +91,7 @@ class PistolItem : Item
 
 class PistolBulletItem : Item
 {
-	mixin InheritedSerializable;
+	mixin (inherited_serializable);
 
 	@property override Symbol symbol() const pure
 		{ return Symbol('"', Color.cyan, true); }
@@ -108,7 +108,7 @@ class PistolBulletItem : Item
 
 /*class PistolClipItem : Item
 {
-	mixin InheritedSerializable;
+	mixin (inherited_serializable);
 
 	@property override Symbol symbol() const
 		{ return Symbol('"', Color.cyan, true); }

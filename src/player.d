@@ -4,7 +4,7 @@ import main;
 import menu;
 import ser;
 import term;
-//import game;
+import map;
 import tile;
 import item;
 import actor;
@@ -16,7 +16,7 @@ class PlayerActor : Actor
 	//invariant(map !is null);
 	//invariant(map.game !is null);
 
-	mixin InheritedSerializable;
+	mixin (inherited_serializable);
 
 	enum body_parts_text_x = 24;
 	enum body_parts_text_y = 1;
@@ -24,16 +24,16 @@ class PlayerActor : Actor
 
 	string _player_name;
 
-	@property override Symbol symbol() const /*pure*/
+	@property override Symbol symbol() const pure
 		{ return Symbol('@', Color.white, Color.black, true); }
-	@property override string name() const /*pure*/ { return "you"; }
-	@property override string definite_name() const /*pure*/ { return name; }
-	@property override string indefinite_name() const /*pure*/ { return name; }
-	@property override string possessive_pronoun() const /*pure*/
+	@property override string name() const pure { return "you"; }
+	@property override string definite_name() const pure { return name; }
+	@property override string indefinite_name() const pure { return name; }
+	@property override string possessive_pronoun() const pure
 		{ return "your"; }
-	@property string player_name() const /*pure*/ { return _player_name; }
-	@property void player_name(string name) /*pure*/ { _player_name = name; }
-	@property private string[int] item_appendices() const /*pure*/
+	@property string player_name() const pure { return _player_name; }
+	@property void player_name(string name) pure { _player_name = name; }
+	@property private string[int] item_appendices() const pure
 	{
 		return [
 			weapon_index: " (currently wielded)",
@@ -47,7 +47,13 @@ class PlayerActor : Actor
 	}
 	this(Serializer serializer) { this(); }
 
-	protected override void initPos(int x, int y) /*pure*/
+	override void init_(Map map, int x, int y)
+	{
+		map.game.player = this;
+		super.init_(map, x, y);
+	}
+
+	protected override void initPos(int x, int y)
 	{
 		super.initPos(x, y);
 		map.game.centerizeCamera(x, y);

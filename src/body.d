@@ -41,7 +41,7 @@ struct Strike
 
 abstract class Body
 {
-	mixin Serializable;
+	mixin (serializable);
 	mixin SimplySerialized;
 
 	enum max_resistance = 4;
@@ -93,7 +93,7 @@ abstract class Body
 
 abstract class FleshyBody : Body
 {
-	mixin InheritedSerializable;
+	mixin (inherited_serializable);
 
 	enum bleeding_from_sharp_divisor = 10;
 
@@ -118,7 +118,7 @@ abstract class FleshyBody : Body
 
 class HumanFleshyBody : FleshyBody
 {
-	mixin InheritedSerializable;
+	mixin (inherited_serializable);
 
 	private int[HumanFleshyBodyPart.max+1] damage;
 	private int[HumanFleshyBodyPart.max+1] bleeding;

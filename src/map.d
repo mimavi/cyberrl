@@ -15,7 +15,7 @@ import item;
 
 class Map
 {
-	mixin Serializable;
+	mixin (serializable);
 
 	@noser Game game;
 	Array!Point visibles;
@@ -45,36 +45,26 @@ class Map
 				getTile(x, y) = new DefaultWallTile;
 			}
 		}
-		//actors = DList!Actor(); // XXX: Umm, pointless?
 	}
 
 	void beforesave(Serializer serializer) {}
 	void beforeload(Serializer serializer) {}
 	void aftersave(Serializer serializer) {}
-	void afterload(Serializer serializer)
-	{
-		foreach (e; actors[]) {
-			e.map = this;
-			getTile(e.x, e.y).actor = e;
-		}
-	}
+	void afterload(Serializer serializer) {}
 
-	// XXX: Perhaps this function will be better as `const`?
-	ref Tile getTile(int x, int y) /*pure*/
+	void init(Game game)
 	{
-		if (x < 0 || y < 0 || x >= _width || y >= _width) {
-			tmp = new WallTile;
-			return tmp;
+		this.game = game;
+		foreach (e; actors[]) {
+			e.init_(this);
 		}
-		return tiles[x+y*_width];
 	}
-	ref Tile getTile(Point p) { return getTile(p.x, p.y); }
 
 	void spawn(Actor actor, int x, int y)
 	{
-		actor.map = this;
+		//actor.map = this;
 		actors.insertBack(actor);
-		actor.initPos(x, y);
+		actor.init_(this, x, y);
 	}
 	void spawn(Actor actor, Point p) { spawn(actor, p.x, p.y); }
 
@@ -101,22 +91,6 @@ class Map
 		int width, int height)
 	{
 		term.clear();
-
-		/*void drawCallback(int tile_x, int tile_y, Tile tile)
-		{
-			int x = tile_x-src_x+dest_x;
-			int y = tile_y-src_y+dest_y;
-
-			if (x >= dest_x && y >= dest_y &&
-				x < dest_x+width && y < dest_y+height)
-			{
-				//tile.draw(x, y);
-				tile.is_visibles = true;
-				tile.is_discovered = true;
-			}
-		}*/
-
-		//fov(src_x+width/2, src_y+height/2, 11, &drawCallback);
 		for (int i = 0; i < width; ++i) {
 			for (int ii = 0; ii < height; ++ii) {
 				getTile(src_x+i, src_y+ii).draw(dest_x+i, dest_y+ii);
@@ -356,4 +330,15 @@ class Map
 	{
 		floodfill(p.x, p.y, fill);
 	}
+
+	// XXX: Perhaps this function will be better as `const`?
+	ref Tile getTile(int x, int y) pure
+	{
+		if (x < 0 || y < 0 || x >= _width || y >= _width) {
+			tmp = new WallTile;
+			return tmp;
+		}
+		return tiles[x+y*_width];
+	}
+	ref Tile getTile(Point p) { return getTile(p.x, p.y); }
 }

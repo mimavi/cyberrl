@@ -97,7 +97,7 @@ class LevelGenerator
 	bool genNarrowCorridorsAndAaRectRoomsGetIsForbidden(AaRect bounds,
 		int x, int y)
 	{
-		return !bounds.get_is_inside(x, y);
+		return !bounds.getIsInside(x, y);
 	}
 
 	// TODO: Use max attempts variable, not max attempts per room variable.
@@ -242,7 +242,7 @@ class LevelGenerator
 	
 	bool genNarrowCorridorGetIsForbidden(AaRect bounds, int x, int y)
 	{
-		return !bounds.get_is_inside(x, y)
+		return !bounds.getIsInside(x, y)
 		|| (!map.getTile(x, y).is_walkable && !map.getTile(x, y).is_default);
 	}
 

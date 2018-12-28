@@ -44,7 +44,7 @@ enum Color
 
 struct Symbol
 {
-	mixin Serializable;
+	mixin (serializable);
 
 	char chr = ' ';
 	Color color = Color.white;

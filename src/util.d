@@ -15,6 +15,7 @@ import term;
 // since static constructors don't interact with each other.
 extern(C) __gshared string[] rt_options = ["oncycle=ignore"];
 
+// XXX: Unused.
 extern(C) Object _d_newclass(TypeInfo_Class ci);
 
 /*Object dup(Object obj)
@@ -29,6 +30,7 @@ extern(C) Object _d_newclass(TypeInfo_Class ci);
 	return clone;
 }*/
 
+// XXX: Unused.
 T enclone(T)(T typed_obj)
 {
 	Object obj = cast(Object) typed_obj;
@@ -165,25 +167,25 @@ enum Dir
 // XXX: Renaming it to `Vector` could make sense.
 struct Point
 {
-	mixin Serializable;
+	mixin (serializable);
 	int x, y;
 
-	this(Serializer serializer) {}
-	this(int x, int y) { this.x = x; this.y = y; }
+	this(Serializer serializer) pure {}
+	this(int x, int y) pure { this.x = x; this.y = y; }
 
 	void beforesave(Serializer serializer) {}
 	void beforeload(Serializer serializer) {}
 	void aftersave(Serializer serializer) {}
 	void afterload(Serializer serializer) {}
 
-	Point opUnary(string op)(Point p)
+	Point opUnary(string op)(Point p) const pure
 	{
 		static if (op == "-") {
 			return Point(-p.x, -p.y);
 		}
 	}
 
-	Point opBinary(string op)(Point p1, Point p2)
+	Point opBinary(string op)(Point p1, Point p2) const pure
 	{
 		static if (op == "+") {
 			return Point(p1.x+p2.x, p1.y+p2.y);
@@ -194,9 +196,10 @@ struct Point
 }
 
 // TODO: Change `Point` to `UPoint` in places where it makes sense.
+// XXX: Useless??? Should remove probably.
 struct UPoint
 {
-	mixin Serializable;
+	mixin (serializable);
 	uint x, y;
 
 	this(Serializer serializer) {}
@@ -228,7 +231,7 @@ struct UPoint
 struct AaRect
 {
 	int x, y, width, height;
-	this(int x, int y, int width, int height)
+	this(int x, int y, int width, int height) pure
 	{
 		this.x = x;
 		this.y = y;
@@ -236,12 +239,12 @@ struct AaRect
 		this.height = height;
 	}
 
-	bool get_is_inside(int x, int y)
+	bool getIsInside(int x, int y) const pure
 	{
 		return x >= this.x && y >= this.y
 		&& x <= this.x+width-1 && y <= this.y+height-1;
 	}
-	bool get_is_inside(Point p) { return get_is_inside(p.x, p.y); }
+	bool getIsInside(Point p) const pure { return getIsInside(p.x, p.y); }
 }
 
 template hasAddress(alias T)

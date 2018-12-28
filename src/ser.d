@@ -1,4 +1,5 @@
-//import std.range.primitives;
+// XXX: Rename this module to "serdes"?
+
 import std.container;
 import std.array;
 import std.json;
@@ -7,18 +8,13 @@ import std.traits;
 import std.stdio;
 import term;
 
+// XXX: Rename this enum to `noserdes`?
 enum noser;
 
-mixin template Serializable()
-{
+private immutable string serializable_static_this = `
 	import std.traits;
 	import util;
-	//immutable bool is_ser = true;
-	enum is_ser = true;
-	@noser static typeof(this) function(Serializer)[string] submakes;
-	@property string type() { return typeof(this).stringof; }
-
-	static this() // XXX.
+	static this()
 	{
 		static if (is(typeof(this) == class)) {
 			static if (!isAbstractClass!(typeof(this))) {
@@ -34,61 +30,34 @@ mixin template Serializable()
 				};
 		}
 	}
-
-	static typeof(this) make(Serializer serializer)
+`;
+private immutable string serializable_not_for_inherited = `
+	enum is_ser = true;
+	@noser static typeof(this) function(Serializer)[string] submakes;
+	static typeof(this) make(Serializer serializer, string type)
 	{
-		//import std.stdio; // XXX.
-		/*if (*serializer.stack[$-1]).isNull) {
-			return null;
-		}*/
-		string type = serializer.load!(string, string)("type");
-		/*static if (is(typeof(this) == class)) {
-			if (type is null) {
-				
-			}
-		} else static if (!isAbstractClass!(typeof(this))) {
-			if (type is null) {
-				return new typeof(this)(serializer);
-			}
-		}*/
-		if (type is null) {
-			static if (is(typeof(this) == class)
-			&& !isAbstractClass!(typeof(this))) {
-				return new typeof(this)(serializer);
-			} else static if (is(typeof(this) == struct)) {
-
-			} else {
-				assert(false);
-			}
-		}
 		return submakes[type](serializer);
 	}
-
-	/*static typeof(this) dup()
+	static typeof(this) make(Serializer serializer)
 	{
-		
-
-		// TODO: Simplify this `foreach` and put it into some routine.
-		foreach (e; __traits(allMembers, typeof(this))) {
-			static if (e != "Monitor"
-			&& e != "opUnary"
-			&& e != "opBinary"
-			&& !hasUDA!(__traits(getMember, typeof(this), e), noser)
-			&& isMutable!(typeof(__traits(getMember, this, e)))
-			&& !isSomeFunction!(__traits(getMember, typeof(this), e))
-			&& hasAddress!(__traits(getMember, this, e))) {
-				__traits(getMember, this, e)
-				//serializer.save(__traits(getMember, this, e), e);
-			}
-		}
-	}*/
-
+		string type = serializer.load!(string, string)("type");
+		return make(serializer, type);
+	}
+`;
+private immutable string serializable_type = `
+	@property string type() { return typeof(this).stringof; }
+`;
+private immutable string serializable_save = `
 	void save(Serializer serializer)
 	{
+		static if (__traits(compiles, { super.save(serializer); })) {
+			super.save(serializer);
+		}
 		beforesave(serializer);
 		serializer.save(type, "type");
 		foreach (e; __traits(allMembers, typeof(this))) {
-			static if (e != "Monitor"
+			static if (__traits(compiles, __traits(getMember, this, e))
+			&& e != "Monitor"
 			&& e != "opUnary"
 			&& e != "opBinary"
 			&& !hasUDA!(__traits(getMember, typeof(this), e), noser)
@@ -100,12 +69,17 @@ mixin template Serializable()
 		}
 		aftersave(serializer);
 	}
-
+`;
+private immutable string serializable_load = `
 	void load(Serializer serializer)
 	{
+		static if (__traits(compiles, { super.save(serializer); })) {
+			super.load(serializer);
+		}
 		beforeload(serializer);
 		foreach (e; __traits(allMembers, typeof(this))) {
-			static if (e != "Monitor"
+			static if (__traits(compiles, __traits(getMember, this, e))
+			&& e != "Monitor"
 			&& e != "opUnary"
 			&& e != "opBinary"
 			&& !hasUDA!(__traits(getMember, typeof(this), e), noser)
@@ -119,7 +93,19 @@ mixin template Serializable()
 		}
 		afterload(serializer);
 	}
-}
+`;
+
+immutable string serializable =
+	serializable_static_this
+	~serializable_not_for_inherited
+	~serializable_type
+	~serializable_save
+	~serializable_load;
+immutable string inherited_serializable =
+	serializable_static_this
+	~"override "~serializable_type
+	~"override "~serializable_save
+	~"override "~serializable_load;
 
 mixin template InheritedSerializable()
 {
@@ -127,10 +113,6 @@ mixin template InheritedSerializable()
 	@property override string type() { return typeof(this).stringof; }
 	static this()
 	{
-		/*submakes[typeof(this).stringof] =
-			function typeof(this)(Serializer serializer) {
-				return new typeof(this)(serializer);
-			};*/
 		static if (!isAbstractClass!(typeof(this))) {
 			submakes[typeof(this).stringof] =
 				function typeof(this)(Serializer serializer) {
@@ -138,6 +120,9 @@ mixin template InheritedSerializable()
 				};
 		}
 	}
+
+	mixin ("override "~serializable_save);
+	mixin ("override "~serializable_load);
 }
 
 mixin template SimplySerialized()
@@ -148,6 +133,7 @@ mixin template SimplySerialized()
 	void afterload(Serializer serializer) {}
 }
 
+/// XXX: Rename this to `Serdes`?
 class Serializer
 {
 	private JSONValue*[] stack;
@@ -232,8 +218,9 @@ class Serializer
 	void saveSerializable(ValType, KeyType)(ValType val, KeyType key)
 	{
 		static if (is(ValType == class)) {
-			if (val is null)
+			if (val is null) {
 				return;
+			}
 		}
 		++stack.length;
 		//*(stack[$-1]) = JSONValue((JSONValue[string]).init);
@@ -250,7 +237,8 @@ class Serializer
 				static if (is(ValType == class)) {
 					return null;
 				} else static if (is(ValType == struct)) {
-					return ValType.make(this);
+					assert(false); // XXX: Throw a meaningful exception?
+					//return ValType.make(this, ValType.stringof);
 				} else {
 					static assert(false);
 				}
@@ -261,7 +249,8 @@ class Serializer
 				static if (is(ValType == class)) {
 					return null;
 				} else static if (is(ValType == struct)) {
-					return ValType.make(this);
+					assert(false); // XXX: Throw a meaningful exception?
+					//return ValType.make(this, ValType.stringof);
 				} else {
 					static assert(false);
 				}
@@ -283,11 +272,15 @@ class Serializer
 	{
 		(*stack[$-1])[key] = JSONValue((JSONValue[]).init);
 		(*stack[$-1])[key].array.length = val.length;
-		auto length = val.length;
+		//auto length = val.length;
 		++stack.length;
 		stack[$-1] = &((*stack[$-2])[key]);
-		foreach (v; val[]) {
-			save(v, length-val.length);
+		/*foreach (v; val[]) {
+			save(v, i);
+			//save(v, length-val.length);
+		}*/
+		for (int i = 0; i < val.length; ++i) {
+			save(val[i], i);
 		}
 		--stack.length;
 	}

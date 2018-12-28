@@ -15,7 +15,7 @@ import map;
 
 struct Msg
 {
-	mixin Serializable;
+	mixin (serializable);
 	mixin SimplySerialized;
 	string fmt;
 	string[] args;
@@ -34,7 +34,7 @@ struct Msg
 
 class Game
 {
-	mixin Serializable;
+	mixin (serializable);
 
 	enum viewport_x = 1;
 	enum viewport_y = 2;
@@ -65,7 +65,10 @@ class Game
 	void beforesave(Serializer serializer) {}
 	void beforeload(Serializer serializer) {}
 	void aftersave(Serializer serializer) {}
-	void afterload(Serializer serializer) { map.game = this; }
+	void afterload(Serializer serializer)
+	{
+		map.init(this);
+	}
 
 	void read(ulong id)
 	{
@@ -113,7 +116,8 @@ class Game
 	{
 		map.draw(camera_x, camera_y, viewport_x, viewport_y,
 			viewport_width, viewport_height);
-
+ 
+		writeln("a ", player);
 		term.write(0, 0, player.player_name, Color.white, true);
 		player.drawBodyStatus();
 

@@ -259,7 +259,7 @@ bool loadGameMenu()
 		return true;
 	}
 	Serializer serializer = new Serializer;
-	main_game = Game.make(serializer);
+	main_game = Game.make(serializer, "Game");
 
 	// Remove trailing ".json" then read.
 	main_game.read(Game.filenameToId(filenames[pos])); 

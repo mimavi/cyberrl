@@ -6,7 +6,7 @@ import actor;
 
 class AiActor : Actor
 {
-	mixin InheritedSerializable;
+	mixin (inherited_serializable);
 	enum max_action_attempts_num = 100;
 
 	// TODO: Serialize `group` properly.
@@ -117,7 +117,7 @@ class AiActor : Actor
 
 class AiGroup
 {
-	mixin Serializable;
+	mixin (serializable);
 	mixin SimplySerialized;
 
 	private Actor _target;

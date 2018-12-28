@@ -8,7 +8,7 @@ import body;
 
 class LightsamuraiAiActor : AiActor
 {
-	mixin InheritedSerializable;
+	mixin (inherited_serializable);
 
 	this()
 	{

@@ -12,7 +12,7 @@ import body;
 
 abstract class Item
 {
-	mixin Serializable;
+	mixin (serializable);
 	mixin SimplySerialized;
 
 	Array!Item loaded_ammo;
